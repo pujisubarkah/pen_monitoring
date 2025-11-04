@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 
+	interface Props {
+		form?: any;
+	}
+
+	let { form }: Props = $props();
 	let loading = $state(false);
 	let showPassword = $state(false);
-	let formData = $state({
-		email: '',
-		password: ''
-	});
 </script>
 
 <div class="login-form">
@@ -15,13 +16,18 @@
 			<div class="icon-bg"></div>
 			<span class="icon">🔐</span>
 		</div>
-		<h2 class="login-title">
-			Selamat Datang
-		</h2>
 		<p class="login-subtitle">
 			Masuk ke Dashboard Monitoring KDMP
 		</p>
 	</div>
+
+	<!-- Error Message -->
+	{#if form?.error}
+		<div class="error-alert">
+			<span class="error-icon">⚠️</span>
+			<span class="error-text">{form.error}</span>
+		</div>
+	{/if}
 
 	<form
 		method="POST"
@@ -47,7 +53,7 @@
 					type="email"
 					autocomplete="email"
 					required
-					bind:value={formData.email}
+					value={form?.email ?? ''}
 					class="form-input"
 					placeholder="nama@email.com"
 				/>
@@ -67,7 +73,6 @@
 					type={showPassword ? 'text' : 'password'}
 					autocomplete="current-password"
 					required
-					bind:value={formData.password}
 					class="form-input"
 					placeholder="••••••••"
 				/>
@@ -173,19 +178,38 @@
 		filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
 	}
 
-	.login-title {
-		font-size: 1.5rem;
-		font-weight: 800;
-		background: linear-gradient(135deg, #1e40af, #3b82f6);
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		margin-bottom: 0.375rem;
-	}
-
 	.login-subtitle {
 		color: #6b7280;
 		font-size: 0.875rem;
+	}
+
+	.error-alert {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.875rem 1rem;
+		background: linear-gradient(135deg, #fef2f2, #fee2e2);
+		border: 1px solid #fca5a5;
+		border-radius: 10px;
+		margin-bottom: 1.5rem;
+		animation: shake 0.5s ease-in-out;
+	}
+
+	@keyframes shake {
+		0%, 100% { transform: translateX(0); }
+		25% { transform: translateX(-4px); }
+		75% { transform: translateX(4px); }
+	}
+
+	.error-icon {
+		font-size: 1.125rem;
+		flex-shrink: 0;
+	}
+
+	.error-text {
+		color: #dc2626;
+		font-size: 0.875rem;
+		font-weight: 600;
 	}
 
 	.input-group {

@@ -1,5 +1,12 @@
 <script lang="ts">
 	import LoginForm from '$lib/components/forms/LoginForm.svelte';
+	import type { ActionData } from './$types';
+
+	interface Props {
+		form?: ActionData;
+	}
+
+	let { form }: Props = $props();
 
 	// Carousel functionality
 	let currentSlide = $state(0);
@@ -58,7 +65,7 @@
 
 					<!-- Login Form -->
 					<div class="login-form-wrapper">
-						<LoginForm />
+						<LoginForm {form} />
 					</div>
 				</div>
 
