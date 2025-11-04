@@ -10,7 +10,7 @@
 
 	// Carousel functionality
 	let currentSlide = $state(0);
-	let carouselInterval: number | null = null;
+	let carouselInterval: ReturnType<typeof setInterval> | null = null;
 
 	const galleryImages = [
 		'https://merahputih.kop.id/images/gallery/dok1.webp',
@@ -72,7 +72,7 @@
 				<!-- Footer -->
 				<div class="aside-footer">
 					<div class="footer-text">
-						© 2025 Kementerian Koperasi dan UKM Republik Indonesia
+						@2025 Lembaga Administrasi Negara
 					</div>
 				</div>
 			</div>

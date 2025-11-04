@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		form?: any;
@@ -8,6 +8,46 @@
 	let { form }: Props = $props();
 	let loading = $state(false);
 	let showPassword = $state(false);
+	let error = $state('');
+	let formData = $state({
+		email: '',
+		password: '',
+		rememberMe: false
+	});
+
+	async function handleSubmit(event: Event) {
+		event.preventDefault();
+		loading = true;
+		error = '';
+
+		try {
+			const response = await fetch('/api/auth/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					email: formData.email,
+					password: formData.password,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				// Login berhasil, redirect berdasarkan role
+				await goto(data.redirect);
+			} else {
+				// Login gagal, tampilkan error
+				error = data.message || 'Terjadi kesalahan saat login';
+			}
+		} catch (err) {
+			console.error('Login error:', err);
+			error = 'Terjadi kesalahan saat login. Silakan coba lagi.';
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <div class="login-form">
@@ -22,24 +62,14 @@
 	</div>
 
 	<!-- Error Message -->
-	{#if form?.error}
+	{#if error}
 		<div class="error-alert">
 			<span class="error-icon">⚠️</span>
-			<span class="error-text">{form.error}</span>
+			<span class="error-text">{error}</span>
 		</div>
 	{/if}
 
-	<form
-		method="POST"
-		action="?/login"
-		use:enhance={() => {
-			loading = true;
-			return async ({ result, update }) => {
-				loading = false;
-				update();
-			};
-		}}
-	>
+	<form onsubmit={handleSubmit}>
 		<!-- Email -->
 		<div class="input-group">
 			<label for="email" class="input-label">
@@ -53,7 +83,7 @@
 					type="email"
 					autocomplete="email"
 					required
-					value={form?.email ?? ''}
+					bind:value={formData.email}
 					class="form-input"
 					placeholder="nama@email.com"
 				/>
@@ -73,6 +103,7 @@
 					type={showPassword ? 'text' : 'password'}
 					autocomplete="current-password"
 					required
+					bind:value={formData.password}
 					class="form-input"
 					placeholder="••••••••"
 				/>
@@ -95,6 +126,7 @@
 					id="remember-me"
 					name="remember-me"
 					type="checkbox"
+					bind:checked={formData.rememberMe}
 					class="checkbox-input"
 				/>
 				<span class="checkbox-text">Ingat saya</span>
@@ -121,6 +153,14 @@
 			{/if}
 		</button>
 	</form>
+
+	<!-- Register Link -->
+	<div class="register-section">
+		<p class="register-text">
+			Belum punya akun?
+			<a href="/register" class="register-link">Daftar di sini</a>
+		</p>
+	</div>
 </div>
 
 <style>
@@ -380,5 +420,30 @@
 		to {
 			transform: rotate(360deg);
 		}
+	}
+
+	.register-section {
+		text-align: center;
+		margin-top: 1.5rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid #e5e7eb;
+	}
+
+	.register-text {
+		color: #6b7280;
+		font-size: 0.875rem;
+		margin: 0;
+	}
+
+	.register-link {
+		color: #3b82f6;
+		text-decoration: none;
+		font-weight: 600;
+		transition: all 0.2s ease;
+	}
+
+	.register-link:hover {
+		color: #2563eb;
+		text-decoration: underline;
 	}
 </style>
