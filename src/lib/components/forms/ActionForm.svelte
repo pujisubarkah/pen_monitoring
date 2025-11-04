@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	
-	let { data = {} } = $props<{ data?: any }>();
+	let { data = {}, onSuccess } = $props<{ data?: any; onSuccess?: () => void }>();
 	
 	let loading = $state(false);
 	let formData = $state({
@@ -36,6 +36,10 @@
 							status: 'pending',
 							assigned_to: ''
 						};
+					}
+					// Call onSuccess callback if provided
+					if (onSuccess) {
+						onSuccess();
 					}
 				}
 				update();

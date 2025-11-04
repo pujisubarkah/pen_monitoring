@@ -27,6 +27,7 @@
 		"vite": "^7.1.10"
 	},
 	"dependencies": {
+		"@skeletonlabs/skeleton": "^4.2.3",
 		"@types/bcrypt": "^6.0.0",
 		"bcrypt": "^6.0.0",
 		"drizzle-orm": "^0.44.7",

@@ -1,23 +1,22 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	
-	let { slug } = $props<{ slug: string }>();
-	
 	const menuAdmin = [
-		{ name: 'Dashboard', path: '/admin', icon: '📊' },
-		{ name: 'Manajemen User', path: '/admin/users', icon: '👥' },
-		{ name: 'Evaluasi Nasional', path: '/admin/evaluasi', icon: '📋' }
+		{ name: 'Dashboard', path: `/admin`, icon: '📊' },
+		{ name: 'Manajemen User', path: `/admin/users`, icon: '👥' },
+		{ name: 'Evaluasi Nasional', path: `/admin/evaluasi`, icon: '📋' }
 	];
 
 	const menuUser = [
-		{ name: 'Dashboard', path: '/user', icon: '🏠' },
-		{ name: 'Input Aksi', path: '/user/aksi', icon: '📝' },
-		{ name: 'Progress Saya', path: '/user/progress', icon: '📈' }
+		{ name: 'Dashboard', path: `/user`, icon: '🏠' },
+		{ name: 'Input Aksi', path: `/user/aksi`, icon: '📝' },
+		{ name: 'Progress Saya', path: `/user/progress`, icon: '📈' }
 	];
 
-	const menu = $derived(() => slug === 'admin' ? menuAdmin : menuUser);
-	const title = $derived(() => slug === 'admin' ? 'Admin Panel' : 'User Portal');
-	const userRole = $derived(() => slug === 'admin' ? 'Administrator' : 'User');
+	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
+	const menu = $derived(() => isAdminRoute ? menuAdmin : menuUser);
+	const title = $derived(() => isAdminRoute ? 'Admin Panel' : 'User Portal');
+	const userRole = $derived(() => isAdminRoute ? 'Administrator' : 'User');
 </script>
 
 <aside class="sidebar">
@@ -40,20 +39,19 @@
 	</nav>
 
 	<div class="sidebar-footer">
-		<div class="user-info">
-			<div class="user-avatar">
-				<span class="user-initial">{slug === 'admin' ? 'A' : 'U'}</span>
-			</div>
-			<div class="user-details">
-				<p class="user-name">Demo {userRole()}</p>
-				<p class="user-role">{userRole()}</p>
-			</div>
-		</div>
+	
 		
 		<a href="/" class="logout-btn">
-			<span class="logout-icon">🚪</span>
+			<span class="logout-icon">🏠</span>
 			<span class="logout-text">Kembali ke Beranda</span>
 		</a>
+		
+		<form action="/api/auth/logout" method="POST" class="logout-form">
+			<button type="submit" class="logout-btn">
+				<span class="logout-icon">🚪</span>
+				<span class="logout-text">Logout</span>
+			</button>
+		</form>
 	</div>
 </aside>
 
@@ -126,43 +124,6 @@
 		background-color: #111827;
 	}
 
-	.user-info {
-		display: flex;
-		align-items: center;
-		padding: 0.75rem;
-		margin-bottom: 1rem;
-		background-color: #374151;
-		border-radius: 0.5rem;
-	}
-
-	.user-avatar {
-		width: 2.5rem;
-		height: 2.5rem;
-		border-radius: 50%;
-		background-color: #3b82f6;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-right: 0.75rem;
-		font-weight: bold;
-		font-size: 1.125rem;
-	}
-
-	.user-details {
-		flex: 1;
-	}
-
-	.user-name {
-		font-size: 0.875rem;
-		font-weight: 600;
-		margin-bottom: 0.125rem;
-	}
-
-	.user-role {
-		font-size: 0.75rem;
-		color: #9ca3af;
-	}
-
 	.logout-btn {
 		display: flex;
 		align-items: center;
@@ -171,11 +132,21 @@
 		text-decoration: none;
 		border-radius: 0.5rem;
 		transition: all 0.2s ease;
+		border: none;
+		background: none;
+		width: 100%;
+		cursor: pointer;
+		font-family: inherit;
+		text-align: left;
 	}
 
 	.logout-btn:hover {
 		background-color: #374151;
 		color: white;
+	}
+
+	.logout-form {
+		margin-top: 0.5rem;
 	}
 
 	.logout-icon {

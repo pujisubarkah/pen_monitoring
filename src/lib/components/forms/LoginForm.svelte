@@ -48,6 +48,10 @@
 			loading = false;
 		}
 	}
+
+	function handleRegisterClick() {
+		goto('/register');
+	}
 </script>
 
 <div class="login-form">
@@ -158,7 +162,7 @@
 	<div class="register-section">
 		<p class="register-text">
 			Belum punya akun?
-			<a href="/register" class="register-link">Daftar di sini</a>
+			<button onclick={handleRegisterClick} class="register-link">Daftar di sini</button>
 		</p>
 	</div>
 </div>
@@ -440,6 +444,12 @@
 		text-decoration: none;
 		font-weight: 600;
 		transition: all 0.2s ease;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		font-size: inherit;
+		font-family: inherit;
 	}
 
 	.register-link:hover {
