@@ -4,7 +4,8 @@
   const menuAdmin = [
     { name: 'Dashboard', path: '/admin' },
     { name: 'Manajemen User', path: '/admin/users' },
-    { name: 'Evaluasi Nasional', path: '/admin/evaluasi' }
+    { name: 'Evaluasi Nasional', path: '/admin/evaluasi' },
+    { name: 'Peta Kinerja', path: '/admin/peta_kinerja' }
   ];
 
   const menuUser = [
