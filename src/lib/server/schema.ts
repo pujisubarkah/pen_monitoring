@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, integer, serial, varchar, index, boolean } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
@@ -43,6 +43,93 @@ export const actions = pgTable('actions', {
 	updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Tabel Utama Action Plans
+export const actionPlans = pgTable('action_plans', {
+  id: serial('id').primaryKey(),
+  pilar: varchar('pilar', { length: 500 }).notNull(),
+  output: text('output'),
+  indikatorKeberhasilan: text('indikator_keberhasilan'),
+  status: varchar('status', { length: 20 }).default('draft').$type<'draft' | 'active' | 'completed'>(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => {
+  return {
+    statusIdx: index('status_idx').on(table.status),
+  };
+});
+
+// Tabel Kegiatan
+export const planActivities = pgTable('plan_activities', {
+  id: serial('id').primaryKey(),
+  actionPlanId: integer('action_plan_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  kegiatan: text('kegiatan').notNull(),
+  urutan: integer('urutan').default(1),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    actionPlanIdIdx: index('plan_activities_action_plan_id_idx').on(table.actionPlanId),
+  };
+});
+
+// Tabel PIC
+export const planPics = pgTable('plan_pics', {
+  id: serial('id').primaryKey(),
+  actionPlanId: integer('action_plan_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  instansiId: integer('instansi_id').references(() => instansi.id),
+  namaPic: varchar('nama_pic', { length: 255 }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    actionPlanIdIdx: index('plan_pics_action_plan_id_idx').on(table.actionPlanId),
+    instansiIdIdx: index('plan_pics_instansi_id_idx').on(table.instansiId),
+  };
+});
+
+// Tabel Jadwal
+export const planSchedules = pgTable('plan_schedules', {
+  id: serial('id').primaryKey(),
+  actionPlanId: integer('action_plan_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  periode: varchar('periode', { length: 20 }).notNull().$type<'pendek' | 'menengah' | 'panjang'>(),
+  
+  // Periode Pendek
+  okt: boolean('okt').default(false),
+  nov: boolean('nov').default(false),
+  des: boolean('des').default(false),
+  
+  // Periode Menengah
+  tw1: boolean('tw1').default(false),
+  tw2: boolean('tw2').default(false),
+  tw3: boolean('tw3').default(false),
+  tw4: boolean('tw4').default(false),
+  
+  // Periode Panjang
+  tahun2027: boolean('tahun_2027').default(false),
+  tahun2028: boolean('tahun_2028').default(false),
+  tahun2029: boolean('tahun_2029').default(false),
+  
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => {
+  return {
+    actionPlanIdIdx: index('plan_schedules_action_plan_id_idx').on(table.actionPlanId),
+    periodeIdx: index('periode_idx').on(table.periode),
+  };
+});
+
+// Tabel Progress (Opsional)
+export const planProgress = pgTable('plan_progress', {
+  id: serial('id').primaryKey(),
+  actionPlanId: integer('action_plan_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  progressPercentage: integer('progress_percentage').default(0),
+  catatan: text('catatan'),
+  status: varchar('status', { length: 20 }).default('on_track').$type<'on_track' | 'delayed' | 'completed' | 'cancelled'>(),
+  reportedBy: varchar('reported_by', { length: 255 }),
+  reportedAt: timestamp('reported_at').defaultNow(),
+}, (table) => {
+  return {
+    actionPlanIdIdx: index('plan_progress_action_plan_id_idx').on(table.actionPlanId),
+  };
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(users, {
 	name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -73,6 +160,55 @@ export const insertSessionSchema = createInsertSchema(sessions);
 export const selectSessionSchema = createSelectSchema(sessions);
 export const selectInstansiSchema = createSelectSchema(instansi);
 
+// Zod schemas for action plans
+export const insertActionPlanSchema = createInsertSchema(actionPlans, {
+  pilar: z.string().min(1, 'Pilar wajib diisi'),
+  output: z.string().optional(),
+  indikatorKeberhasilan: z.string().optional(),
+  status: z.enum(['draft', 'active', 'completed']).default('draft'),
+});
+
+export const insertPlanActivitySchema = createInsertSchema(planActivities, {
+  actionPlanId: z.number().int(),
+  kegiatan: z.string().min(1, 'Kegiatan wajib diisi'),
+  urutan: z.number().int().default(1),
+});
+
+export const insertPlanPicSchema = createInsertSchema(planPics, {
+  actionPlanId: z.number().int(),
+  instansiId: z.number().int().optional(),
+  namaPic: z.string().optional(),
+});
+
+export const insertPlanScheduleSchema = createInsertSchema(planSchedules, {
+  actionPlanId: z.number().int(),
+  periode: z.enum(['pendek', 'menengah', 'panjang']),
+  okt: z.boolean().default(false),
+  nov: z.boolean().default(false),
+  des: z.boolean().default(false),
+  tw1: z.boolean().default(false),
+  tw2: z.boolean().default(false),
+  tw3: z.boolean().default(false),
+  tw4: z.boolean().default(false),
+  tahun2027: z.boolean().default(false),
+  tahun2028: z.boolean().default(false),
+  tahun2029: z.boolean().default(false),
+});
+
+export const insertPlanProgressSchema = createInsertSchema(planProgress, {
+  actionPlanId: z.number().int(),
+  progressPercentage: z.number().int().min(0).max(100).default(0),
+  catatan: z.string().optional(),
+  status: z.enum(['on_track', 'delayed', 'completed', 'cancelled']).default('on_track'),
+  reportedBy: z.string().optional(),
+});
+
+export const selectActionPlanSchema = createSelectSchema(actionPlans);
+export const selectPlanActivitySchema = createSelectSchema(planActivities);
+export const selectPlanPicSchema = createSelectSchema(planPics);
+export const selectPlanScheduleSchema = createSelectSchema(planSchedules);
+export const selectPlanProgressSchema = createSelectSchema(planProgress);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -82,3 +218,15 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type Instansi = typeof instansi.$inferSelect;
 export type NewInstansi = typeof instansi.$inferInsert;
+
+// Action Plan Types
+export type ActionPlan = typeof actionPlans.$inferSelect;
+export type NewActionPlan = typeof actionPlans.$inferInsert;
+export type PlanActivity = typeof planActivities.$inferSelect;
+export type NewPlanActivity = typeof planActivities.$inferInsert;
+export type PlanPic = typeof planPics.$inferSelect;
+export type NewPlanPic = typeof planPics.$inferInsert;
+export type PlanSchedule = typeof planSchedules.$inferSelect;
+export type NewPlanSchedule = typeof planSchedules.$inferInsert;
+export type PlanProgress = typeof planProgress.$inferSelect;
+export type NewPlanProgress = typeof planProgress.$inferInsert;

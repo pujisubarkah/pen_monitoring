@@ -1,44 +1,177 @@
 <!-- src/lib/components/ActionPlanModal.svelte -->
-<script>
+<script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { onMount } from 'svelte';
 
   export let isOpen = false;
   export let formData = {
     pilar: '',
-    kegiatan: '',
-    pic: '',
+    kegiatan: [''],
+    pic: [''],
     output: '',
     indikator: '',
     jadwal: {
-      jan: false,
-      feb: false,
-      mar: false,
-      apr: false,
-      may: false,
-      jun: false,
-      jul: false,
-      aug: false,
-      sep: false,
-      oct: false,
-      nov: false,
-      dec: false
+      pendek: {
+        okt: false,
+        nov: false,
+        des: false
+      },
+      menengah: {
+        tw1: false,
+        tw2: false,
+        tw3: false,
+        tw4: false
+      },
+      panjang: {
+        '2027': false,
+        '2028': false,
+        '2029': false
+      }
     }
   };
 
   const dispatch = createEventDispatcher();
 
-  function handleSubmit() {
-    dispatch('submit', formData);
+  let instansiList: { namaInstansi: string }[] = [];
+  let loadingInstansi = true;
+  let instansiError = '';
+
+  async function fetchInstansi() {
+    try {
+      loadingInstansi = true;
+      instansiError = '';
+
+      const response = await fetch('/api/instansi');
+      const result = await response.json();
+
+      if (result.success) {
+        instansiList = result.data;
+      } else {
+        throw new Error('Failed to fetch instansi data');
+      }
+    } catch (error) {
+      console.error('Error fetching instansi:', error);
+      instansiError = 'Gagal memuat data instansi';
+    } finally {
+      loadingInstansi = false;
+    }
+  }
+
+  function addKegiatan() {
+    formData.kegiatan = [...formData.kegiatan, ''];
+  }
+
+  function removeKegiatan(index: number) {
+    if (formData.kegiatan.length > 1) {
+      formData.kegiatan = formData.kegiatan.filter((_, i) => i !== index);
+    }
+  }
+
+  function addPIC() {
+    formData.pic = [...formData.pic, ''];
+  }
+
+  function removePIC(index: number) {
+    if (formData.pic.length > 1) {
+      formData.pic = formData.pic.filter((_, i) => i !== index);
+    }
+  }
+
+  async function handleSubmit() {
+    try {
+      // Filter out empty kegiatan and PIC
+      const filteredData = {
+        pilar: formData.pilar,
+        activities: formData.kegiatan.filter(k => k.trim() !== ''),
+        pics: formData.pic.filter(p => p.trim() !== ''),
+        output: formData.output,
+        indikatorKeberhasilan: formData.indikator,
+        jadwal: formData.jadwal
+      };
+
+      const response = await fetch('/api/action-plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filteredData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        dispatch('submit', result.data);
+        dispatch('close');
+      } else {
+        throw new Error(result.error || 'Gagal menyimpan rencana aksi');
+      }
+    } catch (error) {
+      console.error('Error submitting action plan:', error);
+      // You might want to show an error message to the user here
+      alert('Terjadi kesalahan saat menyimpan rencana aksi');
+    }
+  }
+
+  function handleBackdropClick() {
     dispatch('close');
+  }
+
+  function handleModalClick(event: MouseEvent | KeyboardEvent) {
+    event.stopPropagation();
+  }
+
+  function resetForm() {
+    formData = {
+      pilar: '',
+      kegiatan: [''],
+      pic: [''],
+      output: '',
+      indikator: '',
+      jadwal: {
+        pendek: {
+          okt: false,
+          nov: false,
+          des: false
+        },
+        menengah: {
+          tw1: false,
+          tw2: false,
+          tw3: false,
+          tw4: false
+        },
+        panjang: {
+          '2027': false,
+          '2028': false,
+          '2029': false
+        }
+      }
+    };
+  }
+
+  onMount(() => {
+    fetchInstansi();
+  });
+
+  $: if (!isOpen) {
+    resetForm();
   }
 </script>
 
 {#if isOpen}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-10 flex items-center justify-center z-50 p-4" on:click={handleBackdropClick} on:keydown={(e) => { if (e.key === 'Escape') dispatch('close'); }} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+    <!-- Modal Content -->
+    <div
+      class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col"
+      on:click={handleModalClick}
+      on:keydown={(event) => { if (event.key === 'Enter' || event.key === ' ') handleModalClick(event); }}
+      role="dialog"
+      tabindex="0"
+      aria-modal="true"
+    >
       <!-- Modal Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 class="text-xl font-bold text-gray-900">Tambah Rencana Aksi</h2>
+        <h2 id="modal-title" class="text-xl font-bold text-gray-900">Tambah Rencana Aksi</h2>
         <button
           on:click={() => dispatch('close')}
           class="text-gray-400 hover:text-gray-600 transition-colors"
@@ -52,93 +185,217 @@
 
       <!-- Modal Content - Scrollable -->
       <div class="flex-1 overflow-y-auto">
-        <form on:submit|preventDefault={handleSubmit} class="space-y-4 p-6">
+        <form on:submit|preventDefault={handleSubmit} class="space-y-6 p-6">
+          <!-- Pilar -->
           <div>
-            <label for="pilar" class="block text-sm font-medium text-gray-700 mb-1">Pilar</label>
-            <input id="pilar" bind:value={formData.pilar} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+            <label for="pilar" class="block text-sm font-medium text-gray-700 mb-2">Pilar</label>
+            <input 
+              id="pilar" 
+              bind:value={formData.pilar} 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+              placeholder="Masukkan pilar program"
+              required
+            />
           </div>
 
+          <!-- Kegiatan/Aksi (Multiple) -->
           <div>
-            <label for="kegiatan" class="block text-sm font-medium text-gray-700 mb-1">Kegiatan/Aksi</label>
-            <textarea id="kegiatan" bind:value={formData.kegiatan} rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"></textarea>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="block text-sm font-medium text-gray-700">Kegiatan/Aksi</h3>
+              <button 
+                type="button" 
+                on:click={addKegiatan}
+                class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+              >
+                + Tambah Kegiatan
+              </button>
+            </div>
+            <div class="space-y-2">
+              {#each formData.kegiatan as kegiatan, index}
+                <div class="flex gap-2">
+                  <input 
+                    bind:value={formData.kegiatan[index]}
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
+                    placeholder={`Kegiatan ${index + 1}`}
+                  />
+                  {#if formData.kegiatan.length > 1}
+                    <button 
+                      type="button" 
+                      on:click={() => removeKegiatan(index)}
+                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                      aria-label="Hapus kegiatan"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
           </div>
 
+          <!-- PIC (Multiple) -->
           <div>
-            <label for="pic" class="block text-sm font-medium text-gray-700 mb-1">PIC</label>
-            <input id="pic" bind:value={formData.pic} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="block text-sm font-medium text-gray-700">PIC</h3>
+              <button 
+                type="button" 
+                on:click={addPIC}
+                class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+              >
+                + Tambah PIC
+              </button>
+            </div>
+            <div class="space-y-2">
+              {#each formData.pic as pic, index}
+                <div class="flex gap-2">
+                  {#if loadingInstansi}
+                    <div class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                      <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                      <span class="text-gray-500 text-sm">Memuat data instansi...</span>
+                    </div>
+                  {:else if instansiError}
+                    <input 
+                      bind:value={formData.pic[index]}
+                      class="flex-1 px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500" 
+                      placeholder={`PIC ${index + 1}`}
+                    />
+                  {:else}
+                    <select
+                      bind:value={formData.pic[index]}
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Pilih Instansi PIC</option>
+                      {#each instansiList as instansi}
+                        <option value={instansi.namaInstansi}>{instansi.namaInstansi}</option>
+                      {/each}
+                    </select>
+                  {/if}
+                  {#if formData.pic.length > 1}
+                    <button 
+                      type="button" 
+                      on:click={() => removePIC(index)}
+                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                      aria-label="Hapus PIC"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
+            {#if instansiError}
+              <p class="text-red-600 text-sm mt-1">{instansiError}</p>
+            {/if}
           </div>
 
+          <!-- Output -->
           <div>
-            <label for="output" class="block text-sm font-medium text-gray-700 mb-1">Output</label>
-            <input id="output" bind:value={formData.output} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+            <label for="output" class="block text-sm font-medium text-gray-700 mb-2">Output</label>
+            <textarea 
+              id="output" 
+              bind:value={formData.output} 
+              rows="3" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Deskripsi output yang diharapkan"
+            ></textarea>
           </div>
 
+          <!-- Indikator Keberhasilan -->
           <div>
-            <label for="indikator" class="block text-sm font-medium text-gray-700 mb-1">Indikator Keberhasilan</label>
-            <input id="indikator" bind:value={formData.indikator} class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" />
+            <label for="indikator" class="block text-sm font-medium text-gray-700 mb-2">Indikator Keberhasilan</label>
+            <textarea 
+              id="indikator" 
+              bind:value={formData.indikator} 
+              rows="3" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Kriteria untuk mengukur keberhasilan kegiatan"
+            ></textarea>
           </div>
 
-          <div>
-            <label for="jadwal-section" class="block text-sm font-medium text-gray-700 mb-2">Jadwal Pelaksanaan</label>
-            <div id="jadwal-section" class="grid grid-cols-3 gap-2">
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.jan} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Jan</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.feb} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Feb</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.mar} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Mar</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.apr} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Apr</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.may} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">May</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.jun} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Jun</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.jul} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Jul</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.aug} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Aug</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.sep} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Sep</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.oct} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Oct</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.nov} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Nov</span>
-              </label>
-              <label class="flex items-center space-x-2">
-                <input type="checkbox" bind:checked={formData.jadwal.dec} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span class="text-sm">Dec</span>
-              </label>
+          <!-- Jadwal Pelaksanaan -->
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Jadwal Pelaksanaan</h3>
+            
+            <!-- Pendek -->
+            <div class="mb-6">
+              <h4 class="text-sm font-medium text-gray-700 mb-3 bg-blue-50 px-3 py-2 rounded-md">PENDEK</h4>
+              <div class="grid grid-cols-3 gap-4">
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.pendek.okt} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <span class="text-sm font-medium">Okt</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.pendek.nov} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <span class="text-sm font-medium">Nov</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.pendek.des} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                  <span class="text-sm font-medium">Des</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Menengah -->
+            <div class="mb-6">
+              <h4 class="text-sm font-medium text-gray-700 mb-3 bg-green-50 px-3 py-2 rounded-md">MENENGAH (1 TAHUN)</h4>
+              <div class="grid grid-cols-2 gap-4">
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.menengah.tw1} class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                  <span class="text-sm font-medium">Triwulan 1</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.menengah.tw2} class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                  <span class="text-sm font-medium">Triwulan 2</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.menengah.tw3} class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                  <span class="text-sm font-medium">Triwulan 3</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.menengah.tw4} class="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                  <span class="text-sm font-medium">Triwulan 4</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Panjang -->
+            <div>
+              <h4 class="text-sm font-medium text-gray-700 mb-3 bg-yellow-50 px-3 py-2 rounded-md">PANJANG (3 TAHUN)</h4>
+              <div class="grid grid-cols-3 gap-4">
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.panjang['2027']} class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
+                  <span class="text-sm font-medium">2027</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.panjang['2028']} class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
+                  <span class="text-sm font-medium">2028</span>
+                </label>
+                <label class="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                  <input type="checkbox" bind:checked={formData.jadwal.panjang['2029']} class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
+                  <span class="text-sm font-medium">2029</span>
+                </label>
+              </div>
             </div>
           </div>
 
           <!-- Form Actions -->
-          <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-            <button type="button" on:click={() => dispatch('close')} class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50">
+          <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <button 
+              type="button" 
+              on:click={() => dispatch('close')} 
+              class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+            >
               Batal
             </button>
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Simpan
+            <button 
+              type="submit" 
+              class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Simpan Rencana Aksi
             </button>
           </div>
         </form>
