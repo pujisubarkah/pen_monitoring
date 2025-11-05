@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from './db';
-import { users, sessions, type User, type NewUser, type NewSession, type Session } from './schema';
+import { users, sessions, instansi, type User, type NewUser, type NewSession, type Session, type Instansi, type NewInstansi } from './schema';
 
 // Hash password function using bcrypt
 export async function hashPassword(password: string): Promise<string> {
@@ -38,6 +38,36 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 export async function findUserById(id: string): Promise<User | null> {
 	const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
 	return result[0] || null;
+}
+
+// Instansi functions
+export async function getAllInstansi(): Promise<Instansi[]> {
+	const result = await db.select().from(instansi).orderBy(instansi.namaInstansi);
+	return result;
+}
+
+export async function findInstansiById(id: number): Promise<Instansi | null> {
+	const result = await db.select().from(instansi).where(eq(instansi.id, id)).limit(1);
+	return result[0] || null;
+}
+
+export async function createInstansi(instansiData: NewInstansi): Promise<Instansi> {
+	const result = await db.insert(instansi).values(instansiData).returning();
+	return result[0];
+}
+
+export async function updateInstansi(id: number, data: Partial<NewInstansi>): Promise<Instansi | null> {
+	const result = await db.update(instansi).set(data).where(eq(instansi.id, id)).returning();
+	return result[0] || null;
+}
+
+export async function deleteInstansi(id: number): Promise<boolean> {
+	try {
+		await db.delete(instansi).where(eq(instansi.id, id));
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 // Session functions

@@ -1,12 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
-import { createUser, findUserByEmail, createSession } from '$lib/server/auth';
+import { createUser, findUserByEmail, createSession, getAllInstansi } from '$lib/server/auth';
 import { insertUserSchema } from '$lib/server/schema';
 
 const registerSchema = z.object({
 	name: z.string().min(2, 'Nama minimal 2 karakter'),
 	email: z.string().email('Format email tidak valid'),
+	instansiId: z.string().optional(),
 	password: z.string().min(8, 'Password minimal 8 karakter'),
 	confirmPassword: z.string(),
 	terms: z.string().refine((val: string) => val === 'on', 'Anda harus menyetujui syarat dan ketentuan')
@@ -25,8 +26,14 @@ export const load: PageServerLoad = async ({ cookies }) => {
 		throw redirect(302, '/dashboard');
 	}
 
+	// Ambil data instansi untuk dropdown
+	const instansiList = await getAllInstansi();
+	console.log('Instansi loaded:', instansiList.length);
+
 	console.log('User not logged in, showing register page');
-	return {};
+	return {
+		instansi: instansiList
+	};
 };
 
 export const actions: Actions = {
@@ -38,6 +45,7 @@ export const actions: Actions = {
 			const data = {
 				name: formData.get('name')?.toString() || '',
 				email: formData.get('email')?.toString() || '',
+				instansiId: formData.get('instansiId')?.toString() || '',
 				password: formData.get('password')?.toString() || '',
 				confirmPassword: formData.get('confirmPassword')?.toString() || '',
 				terms: formData.get('terms')?.toString() || ''
@@ -52,7 +60,8 @@ export const actions: Actions = {
 				return fail(400, {
 					error: result.error.issues[0].message,
 					name: data.name,
-					email: data.email
+					email: data.email,
+					instansiId: data.instansiId
 				});
 			}
 
@@ -63,7 +72,8 @@ export const actions: Actions = {
 				return fail(400, {
 					error: 'Email sudah terdaftar. Silakan gunakan email lain.',
 					name: data.name,
-					email: data.email
+					email: data.email,
+					instansiId: data.instansiId
 				});
 			}
 
@@ -74,6 +84,7 @@ export const actions: Actions = {
 				name: data.name,
 				email: data.email,
 				password: data.password,
+				instansiId: data.instansiId ? parseInt(data.instansiId) : null,
 				role: 'user'
 			});
 

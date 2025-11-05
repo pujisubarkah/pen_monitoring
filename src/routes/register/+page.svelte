@@ -6,16 +6,19 @@
 		form?: ActionData & {
 			name?: string;
 			email?: string;
+			instansiId?: string;
 		};
+		data?: PageData;
 	}
 
-	let { form }: Props = $props();
+	let { form, data }: Props = $props();
 	let loading = $state(false);
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 	let formData = $state({
 		name: '',
 		email: '',
+		instansiId: '',
 		password: '',
 		confirmPassword: ''
 	});
@@ -109,6 +112,27 @@
 											class="form-input"
 											placeholder="nama@email.com"
 										/>
+									</div>
+								</div>
+
+								<!-- Instansi -->
+								<div class="input-group">
+									<label for="instansiId" class="input-label">
+										<span class="label-icon">🏢</span>
+										Instansi
+									</label>
+									<div class="input-wrapper">
+										<select
+											id="instansiId"
+											name="instansiId"
+											class="form-input"
+											value={form?.instansiId ?? ''}
+										>
+											<option value="">Pilih Instansi</option>
+											{#each data?.instansi ?? [] as instansi}
+												<option value={instansi.id}>{instansi.namaInstansi}</option>
+											{/each}
+										</select>
 									</div>
 								</div>
 
