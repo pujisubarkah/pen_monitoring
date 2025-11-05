@@ -19,8 +19,9 @@
 		{data.id ? 'Edit Aksi' : 'Tambah Aksi Baru'}
 	</h2>
 
-	<form 
-		method="POST" 
+	<form
+		method="POST"
+		action="?/createAction"
 		use:enhance={() => {
 			loading = true;
 			return async ({ result, update }) => {

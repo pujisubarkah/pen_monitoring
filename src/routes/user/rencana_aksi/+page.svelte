@@ -5,7 +5,7 @@
   import ActionPlanTable from '$lib/components/ActionPlanTable.svelte';
   import ActionPlanModal from '$lib/components/ActionPlanModal.svelte';
 
-  /** @type {Array<{pilar: string, kegiatan: string, pic: string, output: string, indikator: string, jadwal: Object}>} */
+  /** @type {Array<{pilar: string, kegiatan: string, pic: string, output: string, indikator: string, jadwal: {jan: boolean, feb: boolean, mar: boolean, apr: boolean, may: boolean, jun: boolean, jul: boolean, aug: boolean, sep: boolean, oct: boolean, nov: boolean, dec: boolean}}>} */
   let plans = [];
   let isModalOpen = false;
   let newFormData = {
@@ -14,7 +14,20 @@
     pic: '',
     output: '',
     indikator: '',
-    jadwal: {}
+    jadwal: {
+      jan: false,
+      feb: false,
+      mar: false,
+      apr: false,
+      may: false,
+      jun: false,
+      jul: false,
+      aug: false,
+      sep: false,
+      oct: false,
+      nov: false,
+      dec: false
+    }
   };
 
   // Sinkronisasi store → local
@@ -27,7 +40,27 @@
 
   function handleAdd() {
     actionPlans.update(arr => [...arr, newFormData]);
-    newFormData = { pilar: '', kegiatan: '', pic: '', output: '', indikator: '', jadwal: {} };
+    newFormData = {
+      pilar: '',
+      kegiatan: '',
+      pic: '',
+      output: '',
+      indikator: '',
+      jadwal: {
+        jan: false,
+        feb: false,
+        mar: false,
+        apr: false,
+        may: false,
+        jun: false,
+        jul: false,
+        aug: false,
+        sep: false,
+        oct: false,
+        nov: false,
+        dec: false
+      }
+    };
     isModalOpen = false;
   }
 </script>

@@ -4,7 +4,8 @@
 	const menuAdmin = [
 		{ name: 'Dashboard', path: `/admin`, icon: '📊' },
 		{ name: 'Manajemen User', path: `/admin/users`, icon: '👥' },
-		{ name: 'Evaluasi Nasional', path: `/admin/evaluasi`, icon: '📋' }
+		{ name: 'Evaluasi Nasional', path: `/admin/evaluasi`, icon: '📋' },
+		{ name: 'Laporan', path: `/admin/laporan`, icon: '📄' }
 	];
 
 	const menuUser = [
@@ -40,13 +41,6 @@
 	</nav>
 
 	<div class="sidebar-footer">
-	
-		
-		<a href="/" class="logout-btn">
-			<span class="logout-icon">🏠</span>
-			<span class="logout-text">Kembali ke Beranda</span>
-		</a>
-		
 		<form action="/api/auth/logout" method="POST" class="logout-form">
 			<button type="submit" class="logout-btn">
 				<span class="logout-icon">🚪</span>
