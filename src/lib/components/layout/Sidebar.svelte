@@ -10,6 +10,7 @@
 	const menuUser = [
 		{ name: 'Dashboard', path: `/user`, icon: '🏠' },
 		{ name: 'Input Aksi', path: `/user/aksi`, icon: '📝' },
+		{ name: 'Rencana Aksi', path: `/user/rencana_aksi`, icon: '📋' },
 		{ name: 'Progress Saya', path: `/user/progress`, icon: '📈' }
 	];
 

@@ -65,7 +65,7 @@
 		<div class="flex justify-between items-center py-6">
 			<div class="space-y-3">
 				<div class="flex items-center space-x-4">
-					<div class="w-4 h-12 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse-slow"></div>
+					<div class="w-4 h-12 bg-linear-to-b from-blue-500 via-purple-500 to-pink-500 rounded-full animate-pulse-slow"></div>
 					<div>
 						<h1 class="text-4xl font-black gradient-text animate-pulse-slow">
 							Selamat Datang, {#if user}<span class="text-gray-900">{user.name}</span>{:else}<span class="text-gray-900">Admin</span>{/if}!
@@ -83,7 +83,7 @@
 					<p class="font-bold text-gray-900 text-lg">{#if user}{user.role}{:else}Administrator{/if}</p>
 				</div>
 				<div class="relative group">
-					<div class="w-16 h-16 bg-gradient-to-br from-emerald-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-all duration-300 animate-pulse-slow">
+					<div class="w-16 h-16 bg-linear-to-br from-emerald-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-all duration-300 animate-pulse-slow">
 						<i data-lucide="user" class="w-8 h-8 text-white"></i>
 					</div>
 					<div class="absolute -top-1 -right-1 w-6 h-6 bg-green-400 rounded-full border-3 border-white shadow-lg animate-ping"></div>
