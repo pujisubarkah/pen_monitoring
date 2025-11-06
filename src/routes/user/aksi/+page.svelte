@@ -1,129 +1,199 @@
 <script lang="ts">
-	import ActionForm from '$lib/components/forms/ActionForm.svelte';
+	import { onMount } from 'svelte';
+	import { actionPlans } from '$lib/stores/actionPlanStore';
+	import ActionPlanTable from '$lib/components/ActionPlanTable.svelte';
+	import AksiModal from '$lib/components/AksiModal.svelte';
+	import { get } from 'svelte/store';
 
-	// Receive data from the page
-	export let data: { url: string; actions?: any[] } = { url: '', actions: [] };
+	type ActionPlanItem = {
+		pilar: string;
+		kegiatan: string;
+		pic: string;
+		output: string;
+		indikator: string;
+		jadwal?: any;
+	};
 
-	let showModal = false;
+	type ProcessedPlan = {
+		pilar: string;
+		kegiatan: string[];
+		pic: string[];
+		output: string;
+		indikator: string;
+		jadwal: {
+			pendek: { okt: boolean; nov: boolean; des: boolean };
+			menengah: { tw1: boolean; tw2: boolean; tw3: boolean; tw4: boolean };
+			panjang: {
+				jan: boolean; feb: boolean; mar: boolean; apr: boolean; may: boolean; jun: boolean;
+				jul: boolean; aug: boolean; sep: boolean; oct: boolean; nov: boolean; dec: boolean;
+			};
+		};
+	};
 
-	function openModal() {
-		showModal = true;
-	}
+	let plans: ProcessedPlan[] = [];
+	let isModalOpen = false;
+	let newFormData = {
+		pilar: '',
+		kegiatan: '',
+		pic: '',
+		output: '',
+		indikator: '',
+		jadwal: {
+			pendek: {
+				okt: false,
+				nov: false,
+				des: false
+			},
+			menengah: {
+				tw1: false,
+				tw2: false,
+				tw3: false,
+				tw4: false
+			},
+			panjang: {
+				jan: false,
+				feb: false,
+				mar: false,
+				apr: false,
+				may: false,
+				jun: false,
+				jul: false,
+				aug: false,
+				sep: false,
+				oct: false,
+				nov: false,
+				dec: false,
+				'2027': false,
+				'2028': false,
+				'2029': false
+			}
+		},
+		target_value: '',
+		target_desc: '',
+		capaian_value: '',
+		capaian_desc: '',
+		bukti: '',
+		penjelasan: '',
+		milestone: ''
+	};
 
-	function closeModal() {
-		showModal = false;
-		// Reload the page to get updated actions
-		window.location.reload();
+	onMount(() => {
+		plans = get(actionPlans).map((plan: ActionPlanItem) => ({
+			...plan,
+			kegiatan: plan.kegiatan ? plan.kegiatan.split(', ').filter(k => k.trim()) : [],
+			pic: plan.pic ? plan.pic.split(', ').filter(p => p.trim()) : [],
+			jadwal: (plan.jadwal && typeof plan.jadwal === 'object' && 'pendek' in plan.jadwal && 'menengah' in plan.jadwal && 'panjang' in plan.jadwal)
+				? plan.jadwal
+				: {
+						pendek: {
+							okt: (plan.jadwal as any)?.okt ?? false,
+							nov: (plan.jadwal as any)?.nov ?? false,
+							des: (plan.jadwal as any)?.des ?? false
+						},
+						menengah: {
+							tw1: (plan.jadwal as any)?.tw1 ?? false,
+							tw2: (plan.jadwal as any)?.tw2 ?? false,
+							tw3: (plan.jadwal as any)?.tw3 ?? false,
+							tw4: (plan.jadwal as any)?.tw4 ?? false
+						},
+						panjang: {
+							jan: (plan.jadwal as any)?.jan ?? false,
+							feb: (plan.jadwal as any)?.feb ?? false,
+							mar: (plan.jadwal as any)?.mar ?? false,
+							apr: (plan.jadwal as any)?.apr ?? false,
+							may: (plan.jadwal as any)?.may ?? false,
+							jun: (plan.jadwal as any)?.jun ?? false,
+							jul: (plan.jadwal as any)?.jul ?? false,
+							aug: (plan.jadwal as any)?.aug ?? false,
+							sep: (plan.jadwal as any)?.sep ?? false,
+							oct: (plan.jadwal as any)?.oct ?? false,
+							nov: (plan.jadwal as any)?.nov ?? false,
+							dec: (plan.jadwal as any)?.dec ?? false
+						}
+					}
+		} as ProcessedPlan));
+	});
+	function handleAdd(event: Event) {
+		event.preventDefault();
+		// Transform form data to match store format
+		const flatJadwal = {
+			jan: newFormData.jadwal.panjang.jan ?? false,
+			feb: newFormData.jadwal.panjang.feb ?? false,
+			mar: newFormData.jadwal.panjang.mar ?? false,
+			apr: newFormData.jadwal.panjang.apr ?? false,
+			may: newFormData.jadwal.panjang.may ?? false,
+			jun: newFormData.jadwal.panjang.jun ?? false,
+			jul: newFormData.jadwal.panjang.jul ?? false,
+			aug: newFormData.jadwal.panjang.aug ?? false,
+			sep: newFormData.jadwal.panjang.sep ?? false,
+			oct: newFormData.jadwal.panjang.oct ?? false,
+			nov: newFormData.jadwal.panjang.nov ?? false,
+			dec: newFormData.jadwal.panjang.dec ?? false,
+			// Add any additional keys required by your ActionPlan type here
+		};
+		const storeData = {
+			...newFormData,
+			kegiatan: Array.isArray(newFormData.kegiatan) ? newFormData.kegiatan.join(', ') : newFormData.kegiatan,
+			pic: Array.isArray(newFormData.pic) ? newFormData.pic.join(', ') : newFormData.pic,
+			jadwal: flatJadwal
+		};
+		actionPlans.update(current => [...current, storeData]);
+		plans = get(actionPlans).map((plan: ActionPlanItem) => ({
+			...plan,
+			kegiatan: plan.kegiatan ? plan.kegiatan.split(', ').filter(k => k.trim()) : [],
+			pic: plan.pic ? plan.pic.split(', ').filter(p => p.trim()) : [],
+			jadwal: plan.jadwal && ('pendek' in plan.jadwal && 'menengah' in plan.jadwal && 'panjang' in plan.jadwal)
+				? plan.jadwal
+				: {
+						pendek: {
+							okt: (plan.jadwal as any)?.okt ?? false,
+							nov: (plan.jadwal as any)?.nov ?? false,
+							des: (plan.jadwal as any)?.des ?? false
+						},
+						menengah: {
+							tw1: (plan.jadwal as any)?.menengah?.tw1 ?? false,
+							tw2: (plan.jadwal as any)?.menengah?.tw2 ?? false,
+							tw3: (plan.jadwal as any)?.menengah?.tw3 ?? false,
+							tw4: (plan.jadwal as any)?.menengah?.tw4 ?? false
+						},
+						panjang: {
+							jan: (plan.jadwal as any)?.jan ?? false,
+							feb: (plan.jadwal as any)?.feb ?? false,
+							mar: (plan.jadwal as any)?.mar ?? false,
+							apr: (plan.jadwal as any)?.apr ?? false,
+							may: (plan.jadwal as any)?.may ?? false,
+							jun: (plan.jadwal as any)?.jun ?? false,
+							jul: (plan.jadwal as any)?.jul ?? false,
+							aug: (plan.jadwal as any)?.aug ?? false,
+							sep: (plan.jadwal as any)?.sep ?? false,
+							oct: (plan.jadwal as any)?.oct ?? false,
+							nov: (plan.jadwal as any)?.nov ?? false,
+							dec: (plan.jadwal as any)?.dec ?? false
+						}
+					}
+		} as ProcessedPlan));
+		isModalOpen = false;
+		// Optionally reset newFormData here
 	}
 </script>
 
-<svelte:head>
-	<title>Daftar Aksi - PEN Monitor</title>
-</svelte:head>
-
-<div class="container mx-auto px-4 py-8">
-	<div class="max-w-6xl mx-auto">
-		<div class="flex justify-between items-center mb-8">
-			<div>
-				<h1 class="text-3xl font-bold text-gray-900 mb-2">Daftar Aksi</h1>
-				<p class="text-gray-600">Kelola aksi yang telah dibuat</p>
-			</div>
-			<button
-				onclick={openModal}
-				class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium flex items-center gap-2"
-			>
-				<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-				</svg>
-				Tambah Aksi Baru
-			</button>
-		</div>
-
-		<!-- Actions Table -->
-		{#if !data.actions || data.actions.length === 0}
-			<div class="p-8 text-center text-gray-500">
-				<div class="text-6xl mb-4">📋</div>
-				<p class="text-lg">Belum ada aksi yang dibuat</p>
-				<p class="text-sm">Klik tombol "Tambah Aksi Baru" untuk membuat aksi pertama</p>
-			</div>
-		{:else}
-			<div class="overflow-x-auto">
-				<table class="w-full">
-					<thead class="bg-gray-50">
-						<tr>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul</th>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prioritas</th>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Tanggal</th>
-							<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ditugaskan Kepada</th>
-						</tr>
-					</thead>
-					<tbody class="bg-white divide-y divide-gray-200">
-						{#each data.actions as action}
-							<tr class="hover:bg-gray-50">
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-									{action.title}
-								</td>
-								<td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-									{action.description || '-'}
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-										action.priority === 'high' ? 'bg-red-100 text-red-800' :
-										action.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-										'bg-green-100 text-green-800'
-									}`}>
-										{action.priority === 'high' ? 'Tinggi' : action.priority === 'medium' ? 'Sedang' : 'Rendah'}
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-										action.status === 'completed' ? 'bg-green-100 text-green-800' :
-										action.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
-										action.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-										'bg-gray-100 text-gray-800'
-									}`}>
-										{action.status === 'completed' ? 'Selesai' :
-										 action.status === 'in_progress' ? 'Dalam Proses' :
-										 action.status === 'cancelled' ? 'Dibatalkan' :
-										 'Pending'}
-									</span>
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-									{action.targetDate ? new Date(action.targetDate).toLocaleDateString('id-ID') : '-'}
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-									{action.assignedTo || '-'}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		{/if}
+<main class="p-6 space-y-6">
+	<div class="flex justify-between items-center">
+		<h1 class="text-2xl font-bold">Rencana Aksi PEN 2025</h1>
+		<button
+			on:click={() => isModalOpen = true}
+			class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
+		>
+			+ Tambah Aksi
+		</button>
 	</div>
-</div>
 
-<!-- Modal for creating new action -->
-{#if showModal}
-	<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-		<div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-			<div class="p-6">
-				<div class="flex justify-between items-center mb-6">
-					<h2 class="text-2xl font-bold text-gray-900">Tambah Aksi Baru</h2>
-					<button
-						onclick={closeModal}
-						class="text-gray-400 hover:text-gray-600"
-						aria-label="Tutup modal"
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-						</svg>
-					</button>
-				</div>
-				<ActionForm data={{}} onSuccess={closeModal} />
-			</div>
-		</div>
-	</div>
-{/if}
+	<ActionPlanTable items={plans} />
+
+		<AksiModal
+			isOpen={isModalOpen}
+			on:close={() => isModalOpen = false}
+			formData={newFormData}
+			on:submit={handleAdd}
+		/>
+</main>

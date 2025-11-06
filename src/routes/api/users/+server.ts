@@ -13,8 +13,11 @@ export const GET: RequestHandler = async () => {
       name: u.name,
       email: u.email,
       role: u.role,
-      createdAt: u.createdAt,
-      updatedAt: u.updatedAt,
+      is_active: u.is_active,
+      created_at: u.created_at,
+      updated_at: u.updated_at,
+      instansi_id: u.instansi_id,
+      is_verified: u.is_verified,
     }));
 
     return json({ success: true, data });
@@ -51,8 +54,11 @@ export const POST: RequestHandler = async ({ request }) => {
       name: created.name,
       email: created.email,
       role: created.role,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      is_active: created.is_active,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
+      instansi_id: created.instansi_id,
+      is_verified: created.is_verified,
     };
 
     return json({ success: true, data: safe }, { status: 201 });

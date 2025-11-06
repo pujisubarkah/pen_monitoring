@@ -35,6 +35,18 @@
 			const data = await response.json();
 
 			if (response.ok) {
+				// Cek status verifikasi user
+				if (data.user && data.user.is_verified === false) {
+					error = 'Akun Anda belum diverifikasi admin.';
+					loading = false;
+					return;
+				}
+				// Simpan user ke localStorage
+				if (data.user) {
+					try {
+						localStorage.setItem('user', JSON.stringify(data.user));
+					} catch {}
+				}
 				// Login berhasil, redirect berdasarkan role
 				await goto(data.redirect);
 			} else {

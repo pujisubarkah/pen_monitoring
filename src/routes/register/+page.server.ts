@@ -84,7 +84,7 @@ export const actions: Actions = {
 				name: data.name,
 				email: data.email,
 				password: data.password,
-				instansiId: data.instansiId ? parseInt(data.instansiId) : null,
+				instansi_id: data.instansiId ? parseInt(data.instansiId) : null,
 				role: 'user'
 			});
 

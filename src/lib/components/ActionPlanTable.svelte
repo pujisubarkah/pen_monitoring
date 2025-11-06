@@ -77,13 +77,16 @@
         {@const jadwalPendek = getJadwalByPeriode(item.schedules, 'pendek')}
         {@const jadwalMenengah = getJadwalByPeriode(item.schedules, 'menengah')}
         {@const jadwalPanjang = getJadwalByPeriode(item.schedules, 'panjang')}
-        
+        {@const isFullDone = (
+          (jadwalPendek?.okt && jadwalPendek?.nov && jadwalPendek?.des) &&
+          (jadwalMenengah?.tw1 && jadwalMenengah?.tw2 && jadwalMenengah?.tw3 && jadwalMenengah?.tw4) &&
+          (jadwalPanjang?.tahun2027 && jadwalPanjang?.tahun2028 && jadwalPanjang?.tahun2029)
+        )}
         <tr class="hover:bg-gray-50">
           <!-- Pilar -->
           <td class="px-4 py-3 border align-top font-medium bg-gray-50 whitespace-normal">
             {item.pilar}
           </td>
-          
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             <div class="space-y-1">
@@ -94,7 +97,6 @@
               {/each}
             </div>
           </td>
-          
           <!-- PIC -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             <div class="space-y-1">
@@ -107,54 +109,54 @@
               {/each}
             </div>
           </td>
-          
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
             {item.output || '-'}
           </td>
-          
           <!-- Indikator Keberhasilan -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
             {item.indikatorKeberhasilan || '-'}
           </td>
-          
           <!-- Jadwal Pelaksanaan -->
-          
-          <!-- Pendek -->
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPendek?.okt ? 'bg-blue-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPendek?.nov ? 'bg-blue-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPendek?.des ? 'bg-blue-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          
-          <!-- Menengah -->
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalMenengah?.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalMenengah?.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalMenengah?.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalMenengah?.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          
-          <!-- Panjang -->
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPanjang?.tahun2027 ? 'bg-yellow-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPanjang?.tahun2028 ? 'bg-yellow-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
-          <td class="px-2 py-2 border text-center align-middle">
-            <div class="w-3 h-3 {jadwalPanjang?.tahun2029 ? 'bg-yellow-500' : 'bg-gray-200'} rounded-full mx-auto"></div>
-          </td>
+          {#if isFullDone}
+            <td colspan="10" class="px-2 py-2 border text-center align-middle bg-green-500">
+              <div class="w-full h-8 bg-green-500 rounded-lg transition-all"></div>
+            </td>
+          {:else}
+            <!-- Pendek -->
+            <td class="px-2 py-2 border text-center align-middle {jadwalPendek?.okt ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPendek?.okt ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalPendek?.nov ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPendek?.nov ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalPendek?.des ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPendek?.des ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <!-- Menengah -->
+            <td class="px-2 py-2 border text-center align-middle {jadwalMenengah?.tw1 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalMenengah?.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalMenengah?.tw2 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalMenengah?.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalMenengah?.tw3 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalMenengah?.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalMenengah?.tw4 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalMenengah?.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <!-- Panjang -->
+            <td class="px-2 py-2 border text-center align-middle {jadwalPanjang?.tahun2027 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPanjang?.tahun2027 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalPanjang?.tahun2028 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPanjang?.tahun2028 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+            <td class="px-2 py-2 border text-center align-middle {jadwalPanjang?.tahun2029 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalPanjang?.tahun2029 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            </td>
+          {/if}
         </tr>
       {/each}
       

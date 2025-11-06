@@ -1,202 +1,65 @@
 <script lang="ts">
-	import OrganizationalChart from '$lib/components/OrganizationalChart.svelte';
-	import { onMount } from 'svelte';
+import OrganizationalChart from '$lib/components/OrganizationalChart.svelte';
+import { onMount } from 'svelte';
+import { actionPlans } from '$lib/stores/actionPlanStore';
+import { get } from 'svelte/store';
 
-	// Sample organizational structure data for Pilar Koperasi Merah Putih
-	let instansiData = [
-		{
-			id: 1,
-			instansiId: 1,
-			namaInstansi: 'Kementerian Koperasi & UKM',
-			children: [
-				{
-					id: 2,
-					instansiId: 2,
-					namaInstansi: 'Pilar Pembiayaan',
-					children: [
-						{
-							id: 3,
-							instansiId: 3,
-							namaInstansi: 'Lembaga Keuangan Mikro',
-							children: []
-						},
-						{
-							id: 4,
-							instansiId: 4,
-							namaInstansi: 'Koperasi Simpan Pinjam',
-							children: []
-						},
-						{
-							id: 5,
-							instansiId: 5,
-							namaInstansi: 'Bank Koperasi',
-							children: []
-						}
-					]
-				},
-				{
-					id: 6,
-					instansiId: 6,
-					namaInstansi: 'Pilar Pengembangan SDM',
-					children: [
-						{
-							id: 7,
-							instansiId: 7,
-							namaInstansi: 'Pelatihan & Sertifikasi',
-							children: []
-						},
-						{
-							id: 8,
-							instansiId: 8,
-							namaInstansi: 'Pendidikan Koperasi',
-							children: []
-						},
-						{
-							id: 9,
-							instansiId: 9,
-							namaInstansi: 'Pengembangan Kompetensi',
-							children: []
-						}
-					]
-				},
-				{
-					id: 10,
-					instansiId: 10,
-					namaInstansi: 'Pilar Pengembangan Usaha',
-					children: [
-						{
-							id: 11,
-							instansiId: 11,
-							namaInstansi: 'Inkubasi Bisnis',
-							children: []
-						},
-						{
-							id: 12,
-							instansiId: 12,
-							namaInstansi: 'Pengembangan UMKM',
-							children: []
-						},
-						{
-							id: 13,
-							instansiId: 13,
-							namaInstansi: 'Kemitraan Strategis',
-							children: []
-						}
-					]
-				},
-				{
-					id: 14,
-					instansiId: 14,
-					namaInstansi: 'Pilar Pengembangan Produk',
-					children: [
-						{
-							id: 15,
-							instansiId: 15,
-							namaInstansi: 'Standarisasi Produk',
-							children: []
-						},
-						{
-							id: 16,
-							instansiId: 16,
-							namaInstansi: 'Inovasi Produk',
-							children: []
-						},
-						{
-							id: 17,
-							instansiId: 17,
-							namaInstansi: 'Sertifikasi Halal',
-							children: []
-						}
-					]
-				},
-				{
-					id: 18,
-					instansiId: 18,
-					namaInstansi: 'Pilar Pemasaran',
-					children: [
-						{
-							id: 19,
-							instansiId: 19,
-							namaInstansi: 'Marketplace Koperasi',
-							children: []
-						},
-						{
-							id: 20,
-							instansiId: 20,
-							namaInstansi: 'Ekspor Produk',
-							children: []
-						},
-						{
-							id: 21,
-							instansiId: 21,
-							namaInstansi: 'Promosi & Branding',
-							children: []
-						}
-					]
-				},
-				{
-					id: 22,
-					instansiId: 22,
-					namaInstansi: 'Pilar Digitalisasi',
-					children: [
-						{
-							id: 23,
-							instansiId: 23,
-							namaInstansi: 'Sistem Informasi',
-							children: []
-						},
-						{
-							id: 24,
-							instansiId: 24,
-							namaInstansi: 'E-commerce Platform',
-							children: []
-						},
-						{
-							id: 25,
-							instansiId: 25,
-							namaInstansi: 'Digital Marketing',
-							children: []
-						}
-					]
-				},
-				{
-					id: 26,
-					instansiId: 26,
-					namaInstansi: 'Pilar Jejaring Koperasi',
-					children: [
-						{
-							id: 27,
-							instansiId: 27,
-							namaInstansi: 'Koperasi Primer',
-							children: []
-						},
-						{
-							id: 28,
-							instansiId: 28,
-							namaInstansi: 'Koperasi Sekunder',
-							children: []
-						},
-						{
-							id: 29,
-							instansiId: 29,
-							namaInstansi: 'Koperasi Nasional',
-							children: []
-						}
-					]
-				}
-			]
+let orgData: Array<{ id: number; instansiId: number; namaInstansi: string; children?: any[] }> = [];
+let loading = false;
+let error = '';
+
+function buildOrgDataFromPlans(plans: Array<Record<string, any>>) {
+	// Root node (misal: Kementerian Koperasi & UKM)
+	type OrgNode = {
+		id: number;
+		instansiId: number;
+		namaInstansi: string;
+		children: OrgNode[];
+		milestone?: string;
+		pic?: string;
+	};
+
+	let pilarId = 2;
+	let aksiId = 100;
+
+	// Root node
+	const root: OrgNode = {
+		id: 1,
+		instansiId: 1,
+		namaInstansi: 'Kementerian Koperasi & UKM',
+		children: []
+	};
+
+	// Group by pilar
+	const pilarMap = new Map<string, OrgNode>();
+	for (const plan of plans) {
+		if (!pilarMap.has(plan.pilar)) {
+			pilarMap.set(plan.pilar, {
+				id: pilarId,
+				instansiId: pilarId,
+				namaInstansi: plan.pilar,
+				children: []
+			});
+			pilarId++;
 		}
-	];
+		// Kegiatan/aksi sebagai child dari pilar, tambahkan milestone dan PIC
+		const aksiNode: OrgNode = {
+			id: aksiId,
+			instansiId: aksiId,
+			namaInstansi: Array.isArray(plan.kegiatan) ? plan.kegiatan.join(', ') : plan.kegiatan,
+			children: [],
+			milestone: plan.milestone || plan.jadwal?.milestone || '',
+			pic: Array.isArray(plan.pic) ? plan.pic.join(', ') : plan.pic || ''
+		};
+		aksiId++;
+		pilarMap.get(plan.pilar)!.children.push(aksiNode);
+	}
+	root.children = Array.from(pilarMap.values());
+	return [root];
+}
 
-	let loading = false;
-	let error = '';
 
-	// Note: In a real application, this would fetch hierarchical data from an API
-	// For now, we're using static sample data to demonstrate the organizational chart
-	onMount(() => {
-		// Could fetch hierarchical data here in the future
-		// fetchInstansiHierarchy();
-	});
+$: orgData = buildOrgDataFromPlans($actionPlans);
 </script>
 
 <section class="peta-kinerja-section">
@@ -207,16 +70,16 @@
 
 	<div class="chart-container">
 		<div class="chart-info">
-			<div class="info-icon">�</div>
+			<div class="info-icon">🗺️</div>
 			<div class="info-content">
-				<h4 class="info-title">Pilar Koperasi Merah Putih</h4>
+				<h4 class="info-title">Peta Pilar & Aksi</h4>
 				<p class="info-description">
-					Peta hierarki 7 pilar strategis pengembangan koperasi nasional yang mencakup pembiayaan, SDM, usaha, produk, pemasaran, digitalisasi, dan jejaring koperasi.
+					Peta hierarki pilar dan aksi yang diinputkan pada rencana aksi. Setiap pilar akan menampilkan daftar aksi/kegiatan yang sudah diinput.
 				</p>
 			</div>
 		</div>
 
-		<OrganizationalChart data={instansiData} />
+		<OrganizationalChart data={orgData} />
 	</div>
 </section>
 

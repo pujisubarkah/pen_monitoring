@@ -1,17 +1,59 @@
+// User Profile table
+export const userProfile = pgTable('user_profiles', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull(),
+  nama: varchar('nama', { length: 255 }),
+  email: varchar('email', { length: 255 }),
+  no_hp: varchar('no_hp', { length: 50 }),
+  jabatan: varchar('jabatan', { length: 255 }),
+  unit_kerja: varchar('unit_kerja', { length: 255 }),
+  alamat_kantor: text('alamat_kantor'),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+});
+
+// Zod schema for userProfile
+export const insertUserProfileSchema = createInsertSchema(userProfile, {
+  nama: z.string().min(1, 'Nama wajib diisi'),
+  email: z.string().email('Format email tidak valid'),
+  no_hp: z.string().optional(),
+  jabatan: z.string().optional(),
+  unit_kerja: z.string().optional(),
+  alamat_kantor: z.string().optional(),
+});
+export const selectUserProfileSchema = createSelectSchema(userProfile);
+
+// Types
+export type UserProfile = typeof userProfile.$inferSelect;
+export type NewUserProfile = typeof userProfile.$inferInsert;
 import { pgTable, text, timestamp, uuid, integer, serial, varchar, index, boolean } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 
+// Pilar table
+export const pilar = pgTable('koperasi_pilar', {
+  id: serial('id').primaryKey(),
+  nama_pilar: text('nama_pilar').notNull(),
+});
+
+// Zod schema for Pilar
+export const insertPilarSchema = createInsertSchema(pilar, {
+  nama_pilar: z.string().min(1, 'Nama pilar wajib diisi'),
+});
+export const selectPilarSchema = createSelectSchema(pilar);
+
 // Users table
 export const users = pgTable('users', {
-	id: uuid('id').primaryKey().defaultRandom(),
+	id: serial('id').primaryKey(),
 	name: text('name').notNull(),
 	email: text('email').notNull().unique(),
 	password: text('password').notNull(),
-	instansiId: integer('instansi_id').references(() => instansi.id),
 	role: text('role').notNull().default('user'), // 'admin' or 'user'
-	createdAt: timestamp('created_at').notNull().defaultNow(),
-	updatedAt: timestamp('updated_at').notNull().defaultNow(),
+	is_active: boolean('is_active').notNull().default(true),
+	created_at: timestamp('created_at').notNull().defaultNow(),
+	updated_at: timestamp('updated_at').notNull().defaultNow(),
+	instansi_id: integer('instansi_id'),
+	is_verified: boolean('is_verified').notNull().default(false),
 });
 
 // Instansi table
@@ -24,7 +66,7 @@ export const instansi = pgTable('instansi', {
 // Sessions table
 export const sessions = pgTable('sessions', {
 	id: text('id').primaryKey(),
-	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	expiresAt: timestamp('expires_at').notNull(),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 });
@@ -38,7 +80,7 @@ export const actions = pgTable('actions', {
 	priority: text('priority').notNull().default('medium'), // 'low', 'medium', 'high'
 	status: text('status').notNull().default('pending'), // 'pending', 'in_progress', 'completed', 'cancelled'
 	assignedTo: text('assigned_to'),
-	userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+	userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	createdAt: timestamp('created_at').notNull().defaultNow(),
 	updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -135,8 +177,10 @@ export const insertUserSchema = createInsertSchema(users, {
 	name: z.string().min(2, 'Nama minimal 2 karakter'),
 	email: z.string().email('Format email tidak valid'),
 	password: z.string().min(8, 'Password minimal 8 karakter'),
-	instansiId: z.number().int().optional(),
+	instansi_id: z.number().int().optional(),
 	role: z.enum(['admin', 'user']).default('user'),
+	is_active: z.boolean().default(true),
+	is_verified: z.boolean().default(false),
 });
 
 export const insertInstansiSchema = createInsertSchema(instansi, {
@@ -151,12 +195,16 @@ export const insertActionSchema = createInsertSchema(actions, {
 	priority: z.enum(['low', 'medium', 'high']).default('medium'),
 	status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).default('pending'),
 	assignedTo: z.string().optional(),
-	userId: z.string().uuid(),
+	userId: z.number().int(),
 });
 
 export const selectUserSchema = createSelectSchema(users);
 export const selectActionSchema = createSelectSchema(actions);
-export const insertSessionSchema = createInsertSchema(sessions);
+export const insertSessionSchema = createInsertSchema(sessions, {
+	id: z.string(),
+	userId: z.number().int(),
+	expiresAt: z.date(),
+});
 export const selectSessionSchema = createSelectSchema(sessions);
 export const selectInstansiSchema = createSelectSchema(instansi);
 

@@ -34,6 +34,16 @@
 											<div class="org-node-content">
 												<span class="org-title">{child.namaInstansi}</span>
 												<span class="org-id">ID: {child.instansiId}</span>
+												{#if child.milestone || child.pic}
+												<div class="org-extra-info mt-1 text-xs text-gray-600">
+													{#if child.milestone}
+														<span class="font-semibold text-blue-700">Milestone:</span> {child.milestone}
+													{/if}
+													{#if child.pic}
+														<span class="ml-2 font-semibold text-green-700">PIC:</span> {child.pic}
+													{/if}
+												</div>
+												{/if}
 											</div>
 											<div class="org-node-icon">
 												{#if child.namaInstansi.includes('Pembiayaan')}

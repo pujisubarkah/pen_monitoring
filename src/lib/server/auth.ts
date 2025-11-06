@@ -16,7 +16,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 // User functions
-export async function createUser(userData: Omit<NewUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
+export async function createUser(userData: { name: string; email: string; password: string; role?: string; instansi_id?: number | null; is_active?: boolean; is_verified?: boolean }): Promise<User> {
 	const hashedPassword = await hashPassword(userData.password);
 
 	const newUser: NewUser = {
@@ -24,6 +24,9 @@ export async function createUser(userData: Omit<NewUser, 'id' | 'createdAt' | 'u
 		email: userData.email,
 		password: hashedPassword,
 		role: userData.role || 'user',
+		is_active: userData.is_active ?? true,
+		instansi_id: userData.instansi_id,
+		is_verified: userData.is_verified ?? false,
 	};
 
 	const result = await db.insert(users).values(newUser).returning();
@@ -35,7 +38,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
 	return result[0] || null;
 }
 
-export async function findUserById(id: string): Promise<User | null> {
+export async function findUserById(id: number): Promise<User | null> {
 	const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
 	return result[0] || null;
 }

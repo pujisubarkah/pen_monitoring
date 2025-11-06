@@ -10,8 +10,8 @@
 
   const menuUser = [
     { name: 'Dashboard', path: '/user' },
-    { name: 'Input Aksi', path: '/user/aksi' },
-    { name: 'Progress Saya', path: '/user/progress' }
+    { name: 'Profile', path: '/user/profile' },
+    { name: 'Input Aksi', path: '/user/aksi' }
   ];
 
   // choose menu based on slug

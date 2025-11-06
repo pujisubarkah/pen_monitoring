@@ -8,9 +8,14 @@ import { eq } from 'drizzle-orm';
 // PUT /api/users/[id] - update user
 export const PUT: RequestHandler = async ({ request, params }) => {
   try {
-    const userId = params.id;
-    if (!userId) {
+    const userIdParam = params.id;
+    if (!userIdParam) {
       throw error(400, { message: 'ID pengguna diperlukan' });
+    }
+
+    const userId = parseInt(userIdParam);
+    if (isNaN(userId)) {
+      throw error(400, { message: 'ID pengguna tidak valid' });
     }
 
     const body = await request.json();
@@ -40,9 +45,15 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       updateData.email = body.email;
     }
 
+
     // Update role if provided
     if (body.role) {
       updateData.role = body.role;
+    }
+
+    // Update is_verified if provided
+    if (typeof body.is_verified === 'boolean') {
+      updateData.is_verified = body.is_verified;
     }
 
     // Update password if provided
@@ -67,8 +78,8 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       name: updated.name,
       email: updated.email,
       role: updated.role,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      createdAt: updated.created_at,
+      updatedAt: updated.updated_at,
     };
 
     return json({ success: true, data: safe });
@@ -82,9 +93,14 @@ export const PUT: RequestHandler = async ({ request, params }) => {
 // DELETE /api/users/[id] - delete user
 export const DELETE: RequestHandler = async ({ params }) => {
   try {
-    const userId = params.id;
-    if (!userId) {
+    const userIdParam = params.id;
+    if (!userIdParam) {
       throw error(400, { message: 'ID pengguna diperlukan' });
+    }
+
+    const userId = parseInt(userIdParam);
+    if (isNaN(userId)) {
+      throw error(400, { message: 'ID pengguna tidak valid' });
     }
 
     // Check if user exists

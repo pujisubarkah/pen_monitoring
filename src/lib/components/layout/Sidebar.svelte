@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	
+	import { onMount } from 'svelte';
+	import { writable } from 'svelte/store';
+	const userInfo = writable({ userName: '', userInstansi: '' });
+	// Removed invalid $state import and usage
+
 	const menuAdmin = [
 		{ name: 'Dashboard', path: `/admin`, icon: '📊' },
 		{ name: 'Manajemen User', path: `/admin/users`, icon: '👥' },
@@ -11,21 +15,46 @@
 
 	const menuUser = [
 		{ name: 'Dashboard', path: `/user`, icon: '🏠' },
-		{ name: 'Input Aksi', path: `/user/aksi`, icon: '📝' },
-		{ name: 'Rencana Aksi', path: `/user/rencana_aksi`, icon: '📋' },
-		{ name: 'Progress Saya', path: `/user/progress`, icon: '📈' }
+		{ name: 'Profile', path: `/user/profile`, icon: '👤' },
+		{ name: 'Rencana Aksi', path: `/user/aksi`, icon: '📝' },
 	];
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
 	const menu = $derived(() => isAdminRoute ? menuAdmin : menuUser);
-	const title = $derived(() => isAdminRoute ? 'Admin Panel' : 'User Portal');
-	const userRole = $derived(() => isAdminRoute ? 'Administrator' : 'User');
+
+	function updateUserFromLocalStorage() {
+		if (typeof localStorage !== 'undefined') {
+			const user = localStorage.getItem('user');
+			if (user) {
+				try {
+					const parsed = JSON.parse(user);
+					userInfo.set({
+						userName: parsed.nama || parsed.name || '',
+						userInstansi: parsed.instansi || parsed.instansi_nama || parsed.instansiName || ''
+					});
+				} catch (e) {
+					userInfo.set({ userName: '', userInstansi: '' });
+				}
+			} else {
+				userInfo.set({ userName: '', userInstansi: '' });
+			}
+		}
+	}
+	onMount(() => {
+		updateUserFromLocalStorage();
+		window.addEventListener('storage', updateUserFromLocalStorage);
+	});
 </script>
 
 <aside class="sidebar">
 	<div class="sidebar-header">
 		<h2 class="sidebar-title">PEN Monitor</h2>
-		<p class="sidebar-subtitle">{title()}</p>
+		{#if $userInfo.userName}
+			<p class="sidebar-subtitle">{$userInfo.userName}</p>
+		{/if}
+		{#if $userInfo.userInstansi}
+			<p class="sidebar-subtitle">{$userInfo.userInstansi}</p>
+		{/if}
 	</div>
 
 	<nav class="sidebar-nav">

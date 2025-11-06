@@ -6,13 +6,17 @@
 	import { onMount } from 'svelte';
 	import { Edit, Trash2 } from 'lucide-svelte';
 
+
 	type User = {
-		id: string;
+		id: number;
 		name: string;
 		email: string;
 		role: string;
-		createdAt: string;
-		updatedAt: string;
+		is_active: boolean;
+		is_verified: boolean;
+		instansi_id?: number | null;
+		created_at: string;
+		updated_at: string;
 	};
 
 	let users: User[] = [];
@@ -55,6 +59,27 @@
 			error = 'Gagal memuat data pengguna';
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function verifyUser(user: User) {
+		try {
+			const response = await fetch(`/api/users/${user.id}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ is_verified: !user.is_verified }),
+			});
+			const result = await response.json();
+			if (result.success) {
+				// Update local state
+				users = users.map(u => u.id === user.id ? { ...u, is_verified: !u.is_verified } : u);
+			} else {
+				alert(result.message || 'Gagal memverifikasi pengguna');
+			}
+		} catch (err) {
+			alert('Terjadi kesalahan saat memverifikasi pengguna');
 		}
 	}
 
@@ -167,54 +192,63 @@
 			</div>
 		{:else}
 			<div class="overflow-x-auto">
-				<table class="w-full table-auto">
-					<thead>
-						<tr class="bg-gray-50">
-							<th class="px-4 py-2 text-left">Nama</th>
-							<th class="px-4 py-2 text-left">Email</th>
-							<th class="px-4 py-2 text-left">Role</th>
+				 <table class="w-full table-auto">
+					 <thead>
+						 <tr class="bg-gray-50">
+							 <th class="px-4 py-2 text-left">Nama</th>
+							 <th class="px-4 py-2 text-left">Email</th>
+							 <th class="px-4 py-2 text-left">Role</th>
+							 <th class="px-4 py-2 text-left">Instansi</th>
 							<th class="px-4 py-2 text-left">Status</th>
-							<th class="px-4 py-2 text-left">Aksi</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each users as user (user.id)}
-							<tr class="border-t hover:bg-gray-50">
-								<td class="px-4 py-2">{user.name}</td>
-								<td class="px-4 py-2">{user.email}</td>
-								<td class="px-4 py-2 capitalize">{user.role}</td>
-								<td class="px-4 py-2">
-									<span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Aktif</span>
-								</td>
-								<td class="px-4 py-2">
-									<div class="flex space-x-2">
-										<button
-											on:click={() => openEditModal(user)}
-											class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-											title="Edit"
-										>
-											<Edit size={16} />
-										</button>
-										<button
-											on:click={() => openDeleteConfirm(user)}
-											class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-											title="Hapus"
-										>
-											<Trash2 size={16} />
-										</button>
-									</div>
-								</td>
-							</tr>
-						{/each}
-						{#if users.length === 0}
-							<tr>
-								<td colspan="5" class="px-4 py-8 text-center text-gray-500">
-									Tidak ada data pengguna
-								</td>
-							</tr>
-						{/if}
-					</tbody>
-				</table>
+							 <th class="px-4 py-2 text-left">Aksi</th>
+						 </tr>
+					 </thead>
+					 <tbody>
+						 {#each users as user (user.id)}
+							 <tr class="border-t hover:bg-gray-50">
+								 <td class="px-4 py-2">{user.name}</td>
+								 <td class="px-4 py-2">{user.email}</td>
+								 <td class="px-4 py-2 capitalize">{user.role}</td>
+								 <td class="px-4 py-2">{user.instansi_id ?? '-'}</td>
+										 <td class="px-4 py-2">
+											 <button
+												 class="px-3 py-1 rounded-full text-xs font-semibold focus:outline-none transition-colors
+													 {user.is_verified ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
+												 on:click={() => verifyUser(user)}
+												 title={user.is_verified ? 'Batalkan verifikasi' : 'Verifikasi user'}
+											 >
+												 {user.is_verified ? 'Terverifikasi' : 'Belum'}
+											 </button>
+										 </td>
+								 <td class="px-4 py-2">
+									 <div class="flex space-x-2">
+										 <button
+											 on:click={() => openEditModal(user)}
+											 class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+											 title="Edit"
+										 >
+											 <Edit size={16} />
+										 </button>
+										 <button
+											 on:click={() => openDeleteConfirm(user)}
+											 class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+											 title="Hapus"
+										 >
+											 <Trash2 size={16} />
+										 </button>
+									 </div>
+								 </td>
+							 </tr>
+						 {/each}
+						 {#if users.length === 0}
+							 <tr>
+								 <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+									 Tidak ada data pengguna
+								 </td>
+							 </tr>
+						 {/if}
+					 </tbody>
+				 </table>
 			</div>
 		{/if}
 	</div>

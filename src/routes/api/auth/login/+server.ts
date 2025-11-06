@@ -24,12 +24,20 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			});
 		}
 
+
 		// Find user by email
 		const user = await findUserByEmail(email);
 
 		if (!user) {
 			throw error(401, {
 				message: 'Email atau password salah'
+			});
+		}
+
+		// Only allow login if user is verified
+		if (user.is_verified === false) {
+			throw error(403, {
+				message: 'Akun Anda belum diverifikasi oleh admin.'
 			});
 		}
 
@@ -83,7 +91,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				id: user.id,
 				name: user.name,
 				email: user.email,
-				role: user.role
+				role: user.role,
+				is_verified: user.is_verified
 			},
 			redirect: user.role === 'admin' ? '/admin' : '/user'
 		});
