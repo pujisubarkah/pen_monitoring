@@ -86,7 +86,7 @@
 				// Update user in local state
 				if (editingUser && editingUser.id) {
 					users = editingUser
-						? users.map(u => u.id === editingUser.id ? { ...u, ...editForm } : u)
+						? users.map(u => u.id === editingUser!.id ? { ...u, ...editForm } : u)
 						: users;
 				}
 				showEditModal = false;
@@ -117,7 +117,9 @@
 
 			if (result.success) {
 				// Remove user from local state
-				users = users.filter(u => u.id !== deletingUser.id);
+				if (deletingUser) {
+					users = users.filter(u => deletingUser && u.id !== deletingUser.id);
+				}
 				showDeleteConfirm = false;
 				deletingUser = null;
 			} else {
@@ -294,7 +296,7 @@
 			<div class="p-6">
 				<h3 class="text-lg font-semibold mb-2">Konfirmasi Hapus</h3>
 				<p class="text-gray-600 mb-6">
-					Apakah Anda yakin ingin menghapus pengguna <strong>{deletingUser?.name}</strong>?
+					Apakah Anda yakin ingin menghapus pengguna <strong>{deletingUser ? deletingUser.name : ''}</strong>?
 					Tindakan ini tidak dapat dibatalkan.
 				</p>
 

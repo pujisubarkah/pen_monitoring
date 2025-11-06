@@ -48,17 +48,17 @@ export async function GET({ url }) {
 
     // Group the related data
     type GroupedActionPlan = {
-      id: number;
-      pilar: string;
-      output: string;
-      indikatorKeberhasilan: string;
-      status: string;
-      createdAt: Date;
-      updatedAt: Date;
-      activities: any[];
-      pics: any[];
-      schedules: any[];
-    };
+          id: number;
+          pilar: string;
+          output: string;
+          indikatorKeberhasilan: string;
+          status: string;
+          createdAt: Date | null;
+          updatedAt: Date | null;
+          activities: any[];
+          pics: any[];
+          schedules: any[];
+        };
 
     const groupedData = data.reduce<GroupedActionPlan[]>((acc, row) => {
       const existing = acc.find(item => item.id === row.id);
@@ -66,9 +66,9 @@ export async function GET({ url }) {
         acc.push({
           id: row.id,
           pilar: row.pilar,
-          output: row.output,
-          indikatorKeberhasilan: row.indikatorKeberhasilan,
-          status: row.status,
+          output: row.output ?? '',
+          indikatorKeberhasilan: row.indikatorKeberhasilan ?? '',
+          status: row.status ?? '',
           createdAt: row.createdAt,
           updatedAt: row.updatedAt,
           activities: row.activities ? [row.activities] : [],
