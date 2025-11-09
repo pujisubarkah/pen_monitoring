@@ -4,25 +4,19 @@
 	import { onMount } from 'svelte';
 
 	type ActionPlan = {
-		pilar: string;
-		kegiatan: string;
-		pic: string;
+		id: number;
+		kegiatanId: number;
+		namaKegiatan: string;
+		pilarId: number;
+		namaPilar: string;
 		output: string;
-		indikator: string;
-		jadwal: {
-			jan: boolean;
-			feb: boolean;
-			mar: boolean;
-			apr: boolean;
-			may: boolean;
-			jun: boolean;
-			jul: boolean;
-			aug: boolean;
-			sep: boolean;
-			oct: boolean;
-			nov: boolean;
-			dec: boolean;
-		};
+		indikatorKeberhasilan: string;
+		status: string;
+		createdAt: Date | null;
+		updatedAt: Date | null;
+		activities: any[];
+		pics: any[];
+		rencanaPics: any[];
 	};
 	let actionPlans: ActionPlan[] = [];
 

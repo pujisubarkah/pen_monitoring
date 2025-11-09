@@ -4,12 +4,14 @@
   import { onMount } from 'svelte';
 
   export let isOpen = false;
+  export let editMode = false;
+  export const selectedItem: any = null;
   export let formData = {
-    pilar: '',
-    kegiatan: [''],
-    pic: [''],
+    pilarId: '',
+    kegiatanId: '',
+    pic: [''],  
     output: '',
-    indikator: '',
+    jadwalId: '', // Add jadwalId for editing existing schedule
     jadwal: {
       pendek: {
         okt: false,
@@ -28,13 +30,16 @@
         '2029': false
       }
     }
-  };
+  };  const dispatch = createEventDispatcher();
 
-  const dispatch = createEventDispatcher();
-
-  let instansiList: { namaInstansi: string }[] = [];
+  let instansiList: { id: number; namaInstansi: string }[] = [];
   let loadingInstansi = true;
   let instansiError = '';
+
+  // Kegiatan state
+  let kegiatanList: { id: number; pilarId: number; nama_kegiatan: string; pilar: { nama_pilar: string } }[] = [];
+  let loadingKegiatan = true;
+  let kegiatanError = '';
 
   // Pilar state
   let pilarList: { id: number; nama_pilar: string }[] = [];
@@ -62,16 +67,6 @@
     }
   }
 
-  function addKegiatan() {
-    formData.kegiatan = [...formData.kegiatan, ''];
-  }
-
-  function removeKegiatan(index: number) {
-    if (formData.kegiatan.length > 1) {
-      formData.kegiatan = formData.kegiatan.filter((_, i) => i !== index);
-    }
-  }
-
   function addPIC() {
     formData.pic = [...formData.pic, ''];
   }
@@ -84,36 +79,20 @@
 
   async function handleSubmit() {
     try {
-      // Filter out empty kegiatan and PIC
-      const filteredData = {
-        pilar: formData.pilar,
-        activities: formData.kegiatan.filter(k => k.trim() !== ''),
+      // Filter out empty PIC and prepare data
+      const formDataToSend = {
+        pilarId: formData.pilarId,
+        kegiatanId: formData.kegiatanId,
         pics: formData.pic.filter(p => p.trim() !== ''),
         output: formData.output,
-        indikatorKeberhasilan: formData.indikator,
+        jadwalId: formData.jadwalId, // Include jadwalId for updates
         jadwal: formData.jadwal
       };
 
-      const response = await fetch('/api/action-plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(filteredData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        dispatch('submit', result.data);
-        dispatch('close');
-      } else {
-        throw new Error(result.error || 'Gagal menyimpan rencana aksi');
-      }
+      dispatch('submit', formDataToSend);
     } catch (error) {
-      console.error('Error submitting action plan:', error);
-      // You might want to show an error message to the user here
-      alert('Terjadi kesalahan saat menyimpan rencana aksi');
+      console.error('Error preparing form data:', error);
+      alert('Terjadi kesalahan saat memproses data form');
     }
   }
 
@@ -127,11 +106,11 @@
 
   function resetForm() {
     formData = {
-      pilar: '',
-      kegiatan: [''],
+      pilarId: '',
+      kegiatanId: '',
       pic: [''],
       output: '',
-      indikator: '',
+      jadwalId: '', // Reset jadwalId
       jadwal: {
         pendek: {
           okt: false,
@@ -154,6 +133,27 @@
   }
 
 
+  async function fetchKegiatan() {
+    try {
+      loadingKegiatan = true;
+      kegiatanError = '';
+      const response = await fetch('/api/kegiatan');
+      const result = await response.json();
+      if (Array.isArray(result)) {
+        kegiatanList = result;
+      } else if (result && Array.isArray(result.data)) {
+        kegiatanList = result.data;
+      } else {
+        throw new Error('Format data kegiatan tidak valid');
+      }
+    } catch (error) {
+      console.error('Error fetching kegiatan:', error);
+      kegiatanError = 'Gagal memuat data kegiatan';
+    } finally {
+      loadingKegiatan = false;
+    }
+  }
+
   async function fetchPilar() {
     try {
       loadingPilar = true;
@@ -162,8 +162,6 @@
       const result = await response.json();
       if (Array.isArray(result)) {
         pilarList = result;
-      } else if (result && Array.isArray(result.data)) {
-        pilarList = result.data;
       } else {
         throw new Error('Format data pilar tidak valid');
       }
@@ -177,17 +175,40 @@
 
   onMount(() => {
     fetchInstansi();
+    fetchKegiatan();
     fetchPilar();
   });
 
   $: if (!isOpen) {
     resetForm();
   }
+
+  $: filteredKegiatanList = (function () {
+    if (!formData.pilarId) return kegiatanList;
+
+    // prefer numeric pilarId comparison when available
+    const pid = formData.pilarId.toString();
+
+    return kegiatanList.filter(kegiatan => {
+      // if kegiatan has pilarId property, use it
+      if (kegiatan.pilarId !== undefined && kegiatan.pilarId !== null) {
+        return kegiatan.pilarId.toString() === pid;
+      }
+
+      // fallback: compare by pilar name when only nested pilar object is present
+      const selectedPilar = pilarList.find(p => p.id.toString() === pid);
+      if (selectedPilar && kegiatan.pilar && kegiatan.pilar.nama_pilar) {
+        return kegiatan.pilar.nama_pilar === selectedPilar.nama_pilar;
+      }
+
+      return false;
+    });
+  })();
 </script>
 
 {#if isOpen}
   <!-- Backdrop -->
-  <div class="fixed inset-0 bg-gray-900 bg-opacity-10 flex items-center justify-center z-50 p-4" on:click={handleBackdropClick} on:keydown={(e) => { if (e.key === 'Escape') dispatch('close'); }} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+  <div class="fixed inset-0 bg-transparant bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4" on:click={handleBackdropClick} on:keydown={(e) => { if (e.key === 'Escape') dispatch('close'); }} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
     <!-- Modal Content -->
     <div
       class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col"
@@ -199,7 +220,7 @@
     >
       <!-- Modal Header -->
       <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 id="modal-title" class="text-xl font-bold text-gray-900">Tambah Rencana Aksi</h2>
+        <h2 id="modal-title" class="text-xl font-bold text-gray-900">{editMode ? 'Edit Rencana Aksi' : 'Tambah Rencana Aksi'}</h2>
         <button
           on:click={() => dispatch('close')}
           class="text-gray-400 hover:text-gray-600 transition-colors"
@@ -225,62 +246,60 @@
             {:else if pilarError}
               <input
                 id="pilar"
-                bind:value={formData.pilar}
+                bind:value={formData.pilarId}
                 class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500"
-                placeholder="Pilar program"
+                placeholder="Pilar"
                 required
               />
               <p class="text-red-600 text-sm mt-1">{pilarError}</p>
             {:else}
               <select
                 id="pilar"
-                bind:value={formData.pilar}
+                bind:value={formData.pilarId}
                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">Pilih Pilar</option>
                 {#each pilarList as pilar}
-                  <option value={pilar.nama_pilar}>{pilar.nama_pilar}</option>
+                  <option value={pilar.id}>{pilar.nama_pilar}</option>
                 {/each}
               </select>
             {/if}
           </div>
 
-          <!-- Kegiatan/Aksi (Multiple) -->
+          <!-- Kegiatan -->
           <div>
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="block text-sm font-medium text-gray-700">Kegiatan/Aksi</h3>
-              <button 
-                type="button" 
-                on:click={addKegiatan}
-                class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+            <label for="kegiatan" class="block text-sm font-medium text-gray-700 mb-2">Kegiatan</label>
+            {#if loadingKegiatan}
+              <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                <span class="text-gray-500 text-sm">Memuat data kegiatan...</span>
+              </div>
+            {:else if kegiatanError}
+              <input
+                id="kegiatan"
+                bind:value={formData.kegiatanId}
+                class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500"
+                placeholder="Kegiatan"
+                required
+              />
+              <p class="text-red-600 text-sm mt-1">{kegiatanError}</p>
+            {:else}
+              <select
+                id="kegiatan"
+                bind:value={formData.kegiatanId}
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+                disabled={!formData.pilarId}
               >
-                + Tambah Kegiatan
-              </button>
-            </div>
-            <div class="space-y-2">
-              {#each formData.kegiatan as kegiatan, index}
-                <div class="flex gap-2">
-                  <input 
-                    bind:value={formData.kegiatan[index]}
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" 
-                    placeholder={`Kegiatan ${index + 1}`}
-                  />
-                  {#if formData.kegiatan.length > 1}
-                    <button 
-                      type="button" 
-                      on:click={() => removeKegiatan(index)}
-                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
-                      aria-label="Hapus kegiatan"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
-                  {/if}
-                </div>
-              {/each}
-            </div>
+                <option value="">
+                  {formData.pilarId ? 'Pilih Kegiatan' : 'Pilih Pilar terlebih dahulu'}
+                </option>
+                {#each filteredKegiatanList as kegiatan}
+                  <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
+                {/each}
+              </select>
+            {/if}
           </div>
 
           <!-- PIC (Multiple) -->
@@ -316,7 +335,7 @@
                     >
                       <option value="">Pilih Instansi PIC</option>
                       {#each instansiList as instansi}
-                        <option value={instansi.namaInstansi}>{instansi.namaInstansi}</option>
+                        <option value={instansi.id.toString()}>{instansi.namaInstansi}</option>
                       {/each}
                     </select>
                   {/if}
@@ -349,18 +368,6 @@
               rows="3" 
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               placeholder="Deskripsi output yang diharapkan"
-            ></textarea>
-          </div>
-
-          <!-- Indikator Keberhasilan -->
-          <div>
-            <label for="indikator" class="block text-sm font-medium text-gray-700 mb-2">Indikator Keberhasilan</label>
-            <textarea 
-              id="indikator" 
-              bind:value={formData.indikator} 
-              rows="3" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Kriteria untuk mengukur keberhasilan kegiatan"
             ></textarea>
           </div>
 
@@ -443,7 +450,7 @@
               type="submit" 
               class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              Simpan Rencana Aksi
+              {editMode ? 'Update Rencana Aksi' : 'Simpan Rencana Aksi'}
             </button>
           </div>
         </form>

@@ -1,8 +1,6 @@
 <script lang="ts">
 import OrganizationalChart from '$lib/components/OrganizationalChart.svelte';
 import { onMount } from 'svelte';
-import { actionPlans } from '$lib/stores/actionPlanStore';
-import { get } from 'svelte/store';
 
 let orgData: Array<{ id: number; instansiId: number; namaInstansi: string; children?: any[] }> = [];
 let loading = false;
@@ -58,8 +56,40 @@ function buildOrgDataFromPlans(plans: Array<Record<string, any>>) {
 	return [root];
 }
 
+async function loadActionPlans() {
+	try {
+		loading = true;
+		error = '';
+		
+		const response = await fetch('/api/action-plans?limit=1000'); // Load more data for the chart
+		const result = await response.json();
+		
+		if (result.success) {
+			// Transform API data to match expected format
+			const transformedPlans = result.data.map((plan: any) => ({
+				pilar: plan.namaPilar || 'Unknown Pilar',
+				kegiatan: plan.namaKegiatan || 'Unknown Kegiatan',
+				pic: plan.actionPlanPics?.map((pic: any) => pic.namaInstansi).filter(Boolean) || [],
+				output: plan.output || '',
+				jadwal: {} // Add jadwal if needed
+			}));
+			
+			orgData = buildOrgDataFromPlans(transformedPlans);
+		} else {
+			error = result.error || 'Failed to load action plans';
+			console.error('Failed to load action plans:', result.error);
+		}
+	} catch (err) {
+		error = 'Error loading data';
+		console.error('Error loading action plans:', err);
+	} finally {
+		loading = false;
+	}
+}
 
-$: orgData = buildOrgDataFromPlans($actionPlans);
+onMount(() => {
+	loadActionPlans();
+});
 </script>
 
 <section class="peta-kinerja-section">
@@ -68,19 +98,33 @@ $: orgData = buildOrgDataFromPlans($actionPlans);
 		<p class="section-subtitle">Struktur organisasi dan hierarki program koperasi nasional</p>
 	</div>
 
-	<div class="chart-container">
-		<div class="chart-info">
-			<div class="info-icon">🗺️</div>
-			<div class="info-content">
-				<h4 class="info-title">Peta Pilar & Aksi</h4>
-				<p class="info-description">
-					Peta hierarki pilar dan aksi yang diinputkan pada rencana aksi. Setiap pilar akan menampilkan daftar aksi/kegiatan yang sudah diinput.
-				</p>
-			</div>
+	{#if loading}
+		<div class="loading-container">
+			<div class="loading-spinner"></div>
+			<p>Memuat data peta kinerja...</p>
 		</div>
+	{:else if error}
+		<div class="error-container">
+			<div class="error-icon">⚠️</div>
+			<h3 class="error-title">Terjadi Kesalahan</h3>
+			<p class="error-message">{error}</p>
+			<button class="retry-button" on:click={loadActionPlans}>Coba Lagi</button>
+		</div>
+	{:else}
+		<div class="chart-container">
+			<div class="chart-info">
+				<div class="info-icon">🗺️</div>
+				<div class="info-content">
+					<h4 class="info-title">Peta Pilar & Aksi</h4>
+					<p class="info-description">
+						Peta hierarki pilar dan aksi yang diinputkan pada rencana aksi. Setiap pilar akan menampilkan daftar aksi/kegiatan yang sudah diinput.
+					</p>
+				</div>
+			</div>
 
-		<OrganizationalChart data={orgData} />
-	</div>
+			<OrganizationalChart data={orgData} />
+		</div>
+	{/if}
 </section>
 
 <style>
@@ -105,6 +149,75 @@ $: orgData = buildOrgDataFromPlans($actionPlans);
 	.section-subtitle {
 		font-size: 1.125rem;
 		color: #6b7280;
+	}
+
+	.loading-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 4rem 2rem;
+		text-align: center;
+	}
+
+	.loading-spinner {
+		width: 40px;
+		height: 40px;
+		border: 4px solid #e2e8f0;
+		border-top: 4px solid #3b82f6;
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+		margin-bottom: 1rem;
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+
+	.error-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 4rem 2rem;
+		text-align: center;
+		background: #fef2f2;
+		border: 1px solid #fecaca;
+		border-radius: 8px;
+		margin: 2rem 0;
+	}
+
+	.error-icon {
+		font-size: 3rem;
+		margin-bottom: 1rem;
+	}
+
+	.error-title {
+		font-size: 1.5rem;
+		font-weight: bold;
+		color: #dc2626;
+		margin-bottom: 0.5rem;
+	}
+
+	.error-message {
+		color: #7f1d1d;
+		margin-bottom: 1.5rem;
+	}
+
+	.retry-button {
+		background: #dc2626;
+		color: white;
+		border: none;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		cursor: pointer;
+		font-weight: 500;
+		transition: background-color 0.2s;
+	}
+
+	.retry-button:hover {
+		background: #b91c1c;
 	}
 
 	.chart-container {

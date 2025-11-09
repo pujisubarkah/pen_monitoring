@@ -191,7 +191,7 @@
 				</button>
 			</div>
 		{:else}
-			<div class="overflow-x-auto">
+			<div class="overflow-x-auto mx-auto max-w-4xl">
 				 <table class="w-full table-auto">
 					 <thead>
 						 <tr class="bg-gray-50">
