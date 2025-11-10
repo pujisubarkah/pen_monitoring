@@ -2,6 +2,7 @@
 	import ActionPlanModal from '$lib/components/ActionPlanModal.svelte';
 	import ActionPlanTable from '$lib/components/ActionPlanTable.svelte';
 	import { onMount } from 'svelte';
+	import { toastStore } from '$lib/stores/toastStore';
 
 	type ActionPlan = {
 		id: number;
@@ -41,16 +42,59 @@
 		showModal = true;
 	}
 
-	function handleModalSubmit(event: CustomEvent) {
-		const newActionPlan = event.detail;
-		actionPlans = [...actionPlans, newActionPlan];
-		showModal = false;
-		// Optionally reload data from API
-		loadActionPlans();
+	async function handleModalSubmit(event: CustomEvent) {
+		try {
+			const formData = event.detail;
+			
+			// Prepare data for API
+			const apiData = {
+				kegiatanId: parseInt(formData.kegiatanId),
+				pics: formData.pics,
+				indikatorKeberhasilan: formData.indikatorKeberhasilan,
+				output: formData.output,
+				jadwal: formData.jadwal
+			};
+
+			const response = await fetch('/api/action-plans', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify(apiData)
+			});
+
+			const result = await response.json();
+
+			if (result.success) {
+				toastStore.success('Rencana aksi berhasil dibuat');
+				showModal = false;
+				// Reload data from API
+				loadActionPlans();
+			} else {
+				throw new Error(result.error || 'Gagal menyimpan rencana aksi');
+			}
+		} catch (error) {
+			console.error('Error creating action plan:', error);
+			toastStore.error('Terjadi kesalahan saat menyimpan rencana aksi');
+		}
 	}
 
 	function handleModalClose() {
 		showModal = false;
+	}
+
+	function handleTableEdit(updatedItem: any) {
+		// Update the item in the local array
+		actionPlans = actionPlans.map(item => 
+			item.id === updatedItem.id ? { ...item, ...updatedItem } : item
+		);
+		// Optionally reload data from API
+		loadActionPlans();
+	}
+
+	function handleTableDelete(deletedItem: any) {
+		// Remove the item from the local array
+		actionPlans = actionPlans.filter(item => item.id !== deletedItem.id);
 	}
 
 	onMount(() => {
@@ -85,7 +129,11 @@
 			<p class="text-gray-600 text-sm mt-1">Total: {actionPlans.length} rencana aksi</p>
 		</div>
 
-		<ActionPlanTable items={actionPlans} />
+		<ActionPlanTable 
+			items={actionPlans} 
+			onEdit={handleTableEdit}
+			onDelete={handleTableDelete}
+		/>
 	</div>
 </div>
 

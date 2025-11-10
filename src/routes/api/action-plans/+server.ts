@@ -228,6 +228,21 @@ export async function POST({ request }) {
         });
       }
 
+      // Insert indikatorKeberhasilanDetail if provided
+      if (body.indikatorKeberhasilan && Array.isArray(body.indikatorKeberhasilan)) {
+        const indikatorData = body.indikatorKeberhasilan
+          .filter((indikator: string) => indikator.trim() !== '')
+          .map((indikator: string, index: number) => ({
+            actionPlansId: newActionPlan.id,
+            urutan: index + 1,
+            deskripsi: indikator.trim()
+          }));
+
+        if (indikatorData.length > 0) {
+          await tx.insert(indikatorKeberhasilanDetail).values(indikatorData);
+        }
+      }
+
       return newActionPlan;
     });
 

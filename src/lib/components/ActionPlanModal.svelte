@@ -12,6 +12,7 @@
     pic: [''],  
     output: '',
     jadwalId: '', // Add jadwalId for editing existing schedule
+    indikatorKeberhasilan: [''], // Add indikator keberhasilan
     jadwal: {
       pendek: {
         okt: false,
@@ -77,13 +78,24 @@
     }
   }
 
+  function addIndikator() {
+    formData.indikatorKeberhasilan = [...formData.indikatorKeberhasilan, ''];
+  }
+
+  function removeIndikator(index: number) {
+    if (formData.indikatorKeberhasilan.length > 1) {
+      formData.indikatorKeberhasilan = formData.indikatorKeberhasilan.filter((_, i) => i !== index);
+    }
+  }
+
   async function handleSubmit() {
     try {
-      // Filter out empty PIC and prepare data
+      // Filter out empty PIC and indikator keberhasilan, prepare data
       const formDataToSend = {
         pilarId: formData.pilarId,
         kegiatanId: formData.kegiatanId,
         pics: formData.pic.filter(p => p.trim() !== ''),
+        indikatorKeberhasilan: formData.indikatorKeberhasilan.filter(i => i.trim() !== ''),
         output: formData.output,
         jadwalId: formData.jadwalId, // Include jadwalId for updates
         jadwal: formData.jadwal
@@ -109,6 +121,7 @@
       pilarId: '',
       kegiatanId: '',
       pic: [''],
+      indikatorKeberhasilan: [''], // Reset indikator keberhasilan
       output: '',
       jadwalId: '', // Reset jadwalId
       jadwal: {
@@ -357,6 +370,43 @@
             {#if instansiError}
               <p class="text-red-600 text-sm mt-1">{instansiError}</p>
             {/if}
+          </div>
+
+          <!-- Indikator Keberhasilan (Multiple) -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="block text-sm font-medium text-gray-700">Indikator Keberhasilan</h3>
+              <button 
+                type="button" 
+                on:click={addIndikator}
+                class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+              >
+                + Tambah Indikator
+              </button>
+            </div>
+            <div class="space-y-2">
+              {#each formData.indikatorKeberhasilan as indikator, index}
+                <div class="flex gap-2">
+                  <input 
+                    bind:value={formData.indikatorKeberhasilan[index]}
+                    class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" 
+                    placeholder={`Indikator keberhasilan ${index + 1}`}
+                  />
+                  {#if formData.indikatorKeberhasilan.length > 1}
+                    <button 
+                      type="button" 
+                      on:click={() => removeIndikator(index)}
+                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                      aria-label="Hapus Indikator"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+            </div>
           </div>
 
           <!-- Output -->

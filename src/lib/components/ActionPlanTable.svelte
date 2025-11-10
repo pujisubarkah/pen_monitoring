@@ -3,6 +3,7 @@
   import type { Instansi } from '$lib/server/schema';
   import { Edit, Trash2 } from 'lucide-svelte';
   import ActionPlanModal from './ActionPlanModal.svelte';
+  import { toastStore } from '$lib/stores/toastStore';
 
   export let items: any[] = [];
   export let onEdit: (item: any) => void = () => {};
@@ -20,6 +21,7 @@
     pic: selectedItem.actionPlanPics?.map((pic: any) => pic.picId?.toString() || '') || [''],
     output: selectedItem.output || '',
     jadwalId: selectedItem.actionPlanSchedules?.[0]?.id?.toString() || '',
+    indikatorKeberhasilan: selectedItem.indikatorKeberhasilanDetails?.map((ind: any) => ind.deskripsi || '') || [],
     jadwal: {
       pendek: {
         okt: selectedItem.actionPlanSchedules?.[0]?.okt || false,
@@ -44,6 +46,7 @@
     pic: [''],  
     output: '',
     jadwalId: '',
+    indikatorKeberhasilan: [],
     jadwal: {
       pendek: {
         okt: false,
@@ -115,13 +118,13 @@
       if (result.success) {
         // Call the parent's onDelete function to update the list
         onDelete(item);
-        alert('Rencana aksi berhasil dihapus');
+        toastStore.success('Rencana aksi berhasil dihapus');
       } else {
         throw new Error(result.error || 'Gagal menghapus rencana aksi');
       }
     } catch (error) {
       console.error('Error deleting action plan:', error);
-      alert('Terjadi kesalahan saat menghapus rencana aksi');
+      toastStore.error('Terjadi kesalahan saat menghapus rencana aksi');
     }
   }
 
@@ -134,6 +137,7 @@
       const apiData = {
         kegiatanId: parseInt(formData.kegiatanId),
         pics: formData.pics,
+        indikatorKeberhasilan: formData.indikatorKeberhasilan,
         output: formData.output,
         jadwalId: isEditMode ? formData.jadwalId : undefined, // Include jadwalId for updates
         jadwal: formData.jadwal
@@ -162,13 +166,13 @@
           onEdit(result.data);
         }
         
-        alert(isEditMode ? 'Rencana aksi berhasil diperbarui' : 'Rencana aksi berhasil dibuat');
+        toastStore.success(isEditMode ? 'Rencana aksi berhasil diperbarui' : 'Rencana aksi berhasil dibuat');
       } else {
         throw new Error(result.error || `Gagal ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
       }
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'submitting'} action plan:`, error);
-      alert(`Terjadi kesalahan saat ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
+      toastStore.error(`Terjadi kesalahan saat ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
     }
     
     isModalOpen = false;

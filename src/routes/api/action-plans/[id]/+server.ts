@@ -1,7 +1,7 @@
 
 import { json, error, type RequestEvent } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { actionPlans, actionPlanProgress, instansi, kegiatan, pilar, actionPlanPic, actionPlanSchedule } from '$lib/server/schema';
+import { actionPlans, actionPlanProgress, instansi, kegiatan, pilar, actionPlanPic, actionPlanSchedule, indikatorKeberhasilanDetail } from '$lib/server/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -114,6 +114,9 @@ export async function PUT({ params, request }: RequestEvent) {
       await tx.delete(actionPlanPic).where(eq(actionPlanPic.actionPlansId, id));
       // Don't delete actionPlanSchedule here - we'll update it instead
 
+      // Delete existing indikatorKeberhasilanDetail records
+      await tx.delete(indikatorKeberhasilanDetail).where(eq(indikatorKeberhasilanDetail.actionPlansId, id));
+
       // Insert new actionPlanPic and related records if provided
       if (body.pics && Array.isArray(body.pics)) {
         // Process each PIC
@@ -187,6 +190,22 @@ export async function PUT({ params, request }: RequestEvent) {
           });
         }
       }
+
+      // Insert indikatorKeberhasilanDetail if provided
+      if (body.indikatorKeberhasilan && Array.isArray(body.indikatorKeberhasilan)) {
+        const indikatorData = body.indikatorKeberhasilan
+          .filter((indikator: string) => indikator.trim() !== '')
+          .map((indikator: string, index: number) => ({
+            actionPlansId: id,
+            urutan: index + 1,
+            deskripsi: indikator.trim()
+          }));
+
+        if (indikatorData.length > 0) {
+          await tx.insert(indikatorKeberhasilanDetail).values(indikatorData);
+        }
+      }
+
       return updatedActionPlan;
     });
 
