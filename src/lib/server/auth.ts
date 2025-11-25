@@ -1,6 +1,11 @@
 import { eq } from 'drizzle-orm';
 import { db } from './db';
 import { users, sessions, instansi, type User, type NewUser, type NewSession, type Session, type Instansi, type NewInstansi } from './schema';
+import jwt from 'jsonwebtoken';
+
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 // Hash password function using bcrypt
 export async function hashPassword(password: string): Promise<string> {
@@ -13,6 +18,25 @@ export async function hashPassword(password: string): Promise<string> {
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
 	const bcrypt = await import('bcrypt');
 	return bcrypt.compare(password, hash);
+}
+
+// JWT functions
+export function generateJWT(payload: { id: number; email: string; role: string; instansi_id?: number | null }): string {
+	return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+export function verifyJWT(token: string): { id: number; email: string; role: string; instansi_id?: number | null } | null {
+	try {
+		const decoded = jwt.verify(token, JWT_SECRET) as any;
+		return {
+			id: decoded.id,
+			email: decoded.email,
+			role: decoded.role,
+			instansi_id: decoded.instansi_id
+		};
+	} catch (error) {
+		return null;
+	}
 }
 
 // User functions
@@ -101,8 +125,13 @@ export async function initDemoUsers(): Promise<void> {
 				email: 'admin@demo.com',
 				password: 'demo123',
 				role: 'admin',
+				instansi_id: 48, // Add instansi_id for demo user
 			});
 			console.log('Demo admin user created');
+		} else if (!existingAdmin.instansi_id) {
+			// Update existing user if instansi_id is missing
+			await db.update(users).set({ instansi_id: 48 }).where(eq(users.id, existingAdmin.id));
+			console.log('Demo admin user updated with instansi_id');
 		}
 
 		if (!existingUser) {
@@ -111,8 +140,13 @@ export async function initDemoUsers(): Promise<void> {
 				email: 'user@demo.com',
 				password: 'user123',
 				role: 'user',
+				instansi_id: 48, // Add instansi_id for demo user
 			});
 			console.log('Demo user created');
+		} else if (!existingUser.instansi_id) {
+			// Update existing user if instansi_id is missing
+			await db.update(users).set({ instansi_id: 48 }).where(eq(users.id, existingUser.id));
+			console.log('Demo user updated with instansi_id');
 		}
 	} catch (error) {
 		console.error('Error initializing demo users:', error);

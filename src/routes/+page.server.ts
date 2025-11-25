@@ -1,9 +1,16 @@
 import { redirect, fail } from '@sveltejs/kit';
-import type { Actions } from './$types';
-import { findUserByEmail, verifyPassword, createSession, initDemoUsers } from '$lib/server/auth';
+import type { Actions, PageServerLoad } from './$types';
+import { findUserByEmail, verifyPassword, createSession, initDemoUsers, generateJWT } from '$lib/server/auth';
 
 // Initialize demo users
 await initDemoUsers();
+
+export const load: PageServerLoad = async ({ locals, url }) => {
+	return {
+		user: locals.user || null,
+		url: url.pathname
+	};
+};
 
 export const actions: Actions = {
 	login: async ({ request, cookies }) => {
@@ -55,8 +62,13 @@ export const actions: Actions = {
 			});
 		}
 
-		// Generate simple token (in production, use JWT)
-		const token = `demo-token-${Date.now()}`;
+		// Generate JWT token
+		const token = generateJWT({
+			id: user.id,
+			email: user.email,
+			role: user.role,
+			instansi_id: user.instansi_id
+		});
 
 		// Create session in database
 		await createSession({
@@ -65,7 +77,7 @@ export const actions: Actions = {
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
 		});
 
-		// Set session cookie
+		// Set JWT token in cookie
 		cookies.set('session', token, {
 			path: '/',
 			httpOnly: true,
@@ -79,7 +91,8 @@ export const actions: Actions = {
 			id: user.id,
 			name: user.name,
 			email: user.email,
-			role: user.role
+			role: user.role,
+			instansi_id: user.instansi_id
 		}), {
 			path: '/',
 			httpOnly: true,

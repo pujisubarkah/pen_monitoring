@@ -1,12 +1,36 @@
 <script lang="ts">
 	import LoginForm from '$lib/components/forms/LoginForm.svelte';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData as OriginalPageData } from './$types';
+
+	// Extend PageData to allow optional 'name' property on user
+	type PageData = Omit<OriginalPageData, 'user'> & {
+		user?: OriginalPageData['user'] & { name?: string };
+	};
+	import { userStore } from '$lib/stores/userStore';
+	import { onMount } from 'svelte';
 
 	interface Props {
+		data: PageData;
 		form?: ActionData;
 	}
 
-	let { form }: Props = $props();
+	let { data, form }: Props = $props();
+
+	// Initialize user store with data from server
+	onMount(() => {
+		if (data.user) {
+			// Convert server user data to client format
+			const clientUser = {
+				id: String(data.user.id),
+				name: data.user.name, // Now available from server
+				email: data.user.email,
+				role: data.user.role as "user" | "admin" | "viewer",
+				instansi_id: data.user.instansi_id,
+				created_at: new Date().toISOString() // We don't have this from cookie, use current time
+			};
+			userStore.login(clientUser);
+		}
+	});
 
 	// Carousel functionality
 	let currentSlide = $state(0);

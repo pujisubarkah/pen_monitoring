@@ -29,9 +29,11 @@
 	},
 	"dependencies": {
 		"@types/bcrypt": "^6.0.0",
+		"@types/jsonwebtoken": "^9.0.10",
 		"bcrypt": "^6.0.0",
 		"drizzle-orm": "^0.44.7",
 		"drizzle-zod": "^0.8.3",
+		"jsonwebtoken": "^9.0.2",
 		"lucide-svelte": "^0.552.0",
 		"nodemailer": "^7.0.10",
 		"postgres": "^3.4.7",

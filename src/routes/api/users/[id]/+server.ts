@@ -5,6 +5,45 @@ import { users } from '$lib/server/schema';
 import { findUserByEmail, findUserById, hashPassword } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 
+// GET /api/users/[id] - get user by id
+export const GET: RequestHandler = async ({ params }) => {
+  try {
+    const userIdParam = params.id;
+    if (!userIdParam) {
+      throw error(400, { message: 'ID pengguna diperlukan' });
+    }
+
+    const userId = parseInt(userIdParam);
+    if (isNaN(userId)) {
+      throw error(400, { message: 'ID pengguna tidak valid' });
+    }
+
+    // Get user data
+    const userData = await findUserById(userId);
+    if (!userData) {
+      throw error(404, { message: 'Pengguna tidak ditemukan' });
+    }
+
+    const safe = {
+      id: userData.id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      is_active: userData.is_active,
+      created_at: userData.created_at,
+      updated_at: userData.updated_at,
+      instansi_id: userData.instansi_id,
+      is_verified: userData.is_verified,
+    };
+
+    return json({ success: true, data: safe });
+  } catch (err: any) {
+    console.error('/api/users/[id] GET error', err);
+    if (err instanceof Response) throw err;
+    throw error(500, { message: 'Gagal mengambil data pengguna' });
+  }
+};
+
 // PUT /api/users/[id] - update user
 export const PUT: RequestHandler = async ({ request, params }) => {
   try {

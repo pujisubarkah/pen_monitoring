@@ -5,6 +5,11 @@
   import { goto } from '$app/navigation';
   import { User, Mail, Phone, Briefcase, Building2, MapPin } from 'lucide-svelte';
 
+  let profileId: number | null = null; // Store existing profile ID for updates
+  let success: boolean = false;
+  let error: string = '';
+  let loading: boolean = false;
+  let showModal: boolean = false;
   let formData = {
     nama: '',
     email: '',
@@ -14,16 +19,39 @@
     alamat_kantor: ''
   };
 
-  let loading = false;
-  let error = '';
-  let success = false;
-  let showModal = false;
-
   // TODO: fetch user profile from API if available
   onMount(async () => {
-    // Example: fetch('/api/user/profile')
-    //   .then(res => res.json())
-    //   .then(data => { formData = { ...formData, ...data }; });
+    // Get user_id from localStorage
+    let user_id = undefined;
+    try {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        user_id = userObj.id;
+      }
+    } catch {}
+
+    if (user_id) {
+      try {
+        const response = await fetch(`/api/profile?user_id=${user_id}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Populate form with existing data
+          formData = {
+            nama: data.data.nama || '',
+            email: data.data.email || '',
+            no_hp: data.data.no_hp || '',
+            jabatan: data.data.jabatan || '',
+            unit_kerja: data.data.unit_kerja || '',
+            alamat_kantor: data.data.alamat_kantor || ''
+          };
+          profileId = data.data.id; // Store profile ID for updates
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        // Don't show error for initial load, just leave form empty
+      }
+    }
   });
 
   async function handleSubmit() {
@@ -45,17 +73,25 @@
         loading = false;
         return;
       }
-      const res = await fetch('/api/profile', {
-        method: 'POST',
+
+      const isUpdate = profileId !== null;
+      const method = isUpdate ? 'PUT' : 'POST';
+      const url = isUpdate ? `/api/profile?id=${profileId}` : '/api/profile';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, user_id })
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        error = data.message || 'Gagal menyimpan profil.';
+        error = data.message || `Gagal ${isUpdate ? 'memperbarui' : 'menyimpan'} profil.`;
       } else {
         success = true;
         showModal = true;
+        if (!isUpdate) {
+          profileId = data.data.id; // Store the new profile ID
+        }
       }
     } catch (e) {
       error = 'Gagal menyimpan profil.';
@@ -113,7 +149,7 @@
       <div class="text-green-600 text-sm mt-2">Profil berhasil disimpan!</div>
     {/if}
     <button type="submit" class="bg-blue-800 text-white px-10 py-2 rounded-lg font-semibold shadow hover:bg-blue-900 transition-all mt-6 w-full" disabled={loading}>
-      {loading ? 'Menyimpan...' : 'Simpan Profil'}
+      {loading ? 'Menyimpan...' : (profileId ? 'Update Profil' : 'Simpan Profil')}
     </button>
   </form>
 

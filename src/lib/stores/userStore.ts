@@ -6,6 +6,7 @@ export interface User {
 	name: string;
 	email: string;
 	role: 'admin' | 'user' | 'viewer';
+	instansi_id?: number | null;
 	avatar?: string;
 	created_at: string;
 	last_login?: string;

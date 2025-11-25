@@ -9,7 +9,6 @@
   export let formData = {
     pilarId: '',
     kegiatanId: '',
-    pic: [''],  
     output: '',
     jadwalId: '', // Add jadwalId for editing existing schedule
     indikatorKeberhasilan: [''], // Add indikator keberhasilan
@@ -68,16 +67,6 @@
     }
   }
 
-  function addPIC() {
-    formData.pic = [...formData.pic, ''];
-  }
-
-  function removePIC(index: number) {
-    if (formData.pic.length > 1) {
-      formData.pic = formData.pic.filter((_, i) => i !== index);
-    }
-  }
-
   function addIndikator() {
     formData.indikatorKeberhasilan = [...formData.indikatorKeberhasilan, ''];
   }
@@ -90,11 +79,10 @@
 
   async function handleSubmit() {
     try {
-      // Filter out empty PIC and indikator keberhasilan, prepare data
+      // Filter out empty indikator keberhasilan, prepare data
       const formDataToSend = {
         pilarId: formData.pilarId,
         kegiatanId: formData.kegiatanId,
-        pics: formData.pic.filter(p => p.trim() !== ''),
         indikatorKeberhasilan: formData.indikatorKeberhasilan.filter(i => i.trim() !== ''),
         output: formData.output,
         jadwalId: formData.jadwalId, // Include jadwalId for updates
@@ -120,7 +108,6 @@
     formData = {
       pilarId: '',
       kegiatanId: '',
-      pic: [''],
       indikatorKeberhasilan: [''], // Reset indikator keberhasilan
       output: '',
       jadwalId: '', // Reset jadwalId
@@ -187,7 +174,6 @@
   }
 
   onMount(() => {
-    fetchInstansi();
     fetchKegiatan();
     fetchPilar();
   });
@@ -312,63 +298,6 @@
                   <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
                 {/each}
               </select>
-            {/if}
-          </div>
-
-          <!-- PIC (Multiple) -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="block text-sm font-medium text-gray-700">PIC</h3>
-              <button 
-                type="button" 
-                on:click={addPIC}
-                class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
-              >
-                + Tambah PIC
-              </button>
-            </div>
-            <div class="space-y-2">
-              {#each formData.pic as pic, index}
-                <div class="flex gap-2">
-                  {#if loadingInstansi}
-                    <div class="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
-                      <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      <span class="text-gray-500 text-sm">Memuat data instansi...</span>
-                    </div>
-                  {:else if instansiError}
-                    <input 
-                      bind:value={formData.pic[index]}
-                      class="flex-1 px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500" 
-                      placeholder={`PIC ${index + 1}`}
-                    />
-                  {:else}
-                    <select
-                      bind:value={formData.pic[index]}
-                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Pilih Instansi PIC</option>
-                      {#each instansiList as instansi}
-                        <option value={instansi.id.toString()}>{instansi.namaInstansi}</option>
-                      {/each}
-                    </select>
-                  {/if}
-                  {#if formData.pic.length > 1}
-                    <button 
-                      type="button" 
-                      on:click={() => removePIC(index)}
-                      class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
-                      aria-label="Hapus PIC"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                      </svg>
-                    </button>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-            {#if instansiError}
-              <p class="text-red-600 text-sm mt-1">{instansiError}</p>
             {/if}
           </div>
 

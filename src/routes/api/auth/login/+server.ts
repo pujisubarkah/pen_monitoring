@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { findUserByEmail, verifyPassword, createSession, initDemoUsers } from '$lib/server/auth';
+import { findUserByEmail, verifyPassword, createSession, initDemoUsers, generateJWT } from '$lib/server/auth';
 
 // Initialize demo users on startup
 await initDemoUsers();
@@ -50,18 +50,23 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			});
 		}
 
-		// Generate session token
-		const sessionToken = crypto.randomUUID();
+		// Generate JWT token
+		const token = generateJWT({
+			id: user.id,
+			email: user.email,
+			role: user.role,
+			instansi_id: user.instansi_id
+		});
 
 		// Create session in database
 		await createSession({
-			id: sessionToken,
+			id: token,
 			userId: user.id,
 			expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 hari
 		});
 
-		// Set session cookie
-		cookies.set('session', sessionToken, {
+		// Set JWT token in cookie
+		cookies.set('session', token, {
 			path: '/',
 			httpOnly: true,
 			secure: false, // Set to true in production with HTTPS
@@ -74,7 +79,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			id: user.id,
 			name: user.name,
 			email: user.email,
-			role: user.role
+			role: user.role,
+			instansi_id: user.instansi_id
 		}), {
 			path: '/',
 			httpOnly: true,
@@ -92,6 +98,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				name: user.name,
 				email: user.email,
 				role: user.role,
+				instansi_id: user.instansi_id,
 				is_verified: user.is_verified
 			},
 			redirect: user.role === 'admin' ? '/admin' : '/user'

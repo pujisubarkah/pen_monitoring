@@ -18,7 +18,6 @@
   $: modalFormData = isEditMode && selectedItem ? {
     pilarId: selectedItem.pilarId?.toString() || '',
     kegiatanId: selectedItem.kegiatanId?.toString() || '',
-    pic: selectedItem.actionPlanPics?.map((pic: any) => pic.picId?.toString() || '') || [''],
     output: selectedItem.output || '',
     jadwalId: selectedItem.actionPlanSchedules?.[0]?.id?.toString() || '',
     indikatorKeberhasilan: selectedItem.indikatorKeberhasilanDetails?.map((ind: any) => ind.deskripsi || '') || [],
@@ -43,7 +42,6 @@
   } : {
     pilarId: '',
     kegiatanId: '',
-    pic: [''],  
     output: '',
     jadwalId: '',
     indikatorKeberhasilan: [],
@@ -66,20 +64,6 @@
       }
     }
   };
-
-  // Helper untuk format PIC dari actionPlanPics dengan namaInstansi
-  function formatPIC(actionPlanPics: any[]) {
-    if (!actionPlanPics || actionPlanPics.length === 0) return '-';
-
-    // Get unique PIC names
-    const picNames = actionPlanPics
-      .map(pic => pic.namaInstansi)
-      .filter(name => name) // Remove null/undefined
-      .filter((name, index, arr) => arr.indexOf(name) === index); // Remove duplicates
-
-    // Format with numbering
-    return picNames.map((name, index) => `${index + 1}. ${name}`).join(', ') || '-';
-  }
 
   // Helper untuk mendapatkan jadwal berdasarkan actionPlanSchedules
   function getJadwalByPeriode(actionPlanSchedules: any[]) {
@@ -136,7 +120,6 @@
       // Prepare data for API
       const apiData = {
         kegiatanId: parseInt(formData.kegiatanId),
-        pics: formData.pics,
         indikatorKeberhasilan: formData.indikatorKeberhasilan,
         output: formData.output,
         jadwalId: isEditMode ? formData.jadwalId : undefined, // Include jadwalId for updates
@@ -193,7 +176,6 @@
       <tr>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PILAR</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">KEGIATAN/AKSI</th>
-        <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PIC</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">OUTPUT</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">INDIKATOR KEBERHASILAN</th>
         <th colspan="10" class="px-4 py-2 border text-center font-medium text-gray-700 bg-blue-50">JADWAL PELAKSANAAN</th>
@@ -243,10 +225,6 @@
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             {item.namaKegiatan || '-'}
-          </td>
-          <!-- PIC -->
-          <td class="px-4 py-3 border align-top whitespace-normal">
-            {formatPIC(item.actionPlanPics)}
           </td>
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
@@ -330,7 +308,7 @@
       
       {#if items.length === 0}
         <tr>
-          <td colspan="16" class="px-6 py-8 text-center text-gray-500 border">
+          <td colspan="17" class="px-6 py-8 text-center text-gray-500 border">
             Belum ada data rencana aksi
           </td>
         </tr>
