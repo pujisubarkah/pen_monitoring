@@ -17,6 +17,7 @@
 		{ name: 'Dashboard', path: `/user`, icon: '🏠' },
 		{ name: 'Profile', path: `/user/profile`, icon: '👤' },
 		{ name: 'Rencana Aksi', path: `/user/aksi`, icon: '📝' },
+		{ name: 'Progress', path: `/user/progress`, icon: '📈' },
 	];
 
 	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));

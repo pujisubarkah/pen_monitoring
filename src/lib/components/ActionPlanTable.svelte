@@ -19,24 +19,24 @@
     pilarId: selectedItem.pilarId?.toString() || '',
     kegiatanId: selectedItem.kegiatanId?.toString() || '',
     output: selectedItem.output || '',
-    jadwalId: selectedItem.actionPlanSchedules?.[0]?.id?.toString() || '',
-    indikatorKeberhasilan: selectedItem.indikatorKeberhasilanDetails?.map((ind: any) => ind.deskripsi || '') || [],
-    jadwal: {
+    jadwalId: selectedItem.jadwalId || '',
+    indikatorKeberhasilan: selectedItem.indikator ? [selectedItem.indikator] : [],
+    jadwal: selectedItem.jadwal || {
       pendek: {
-        okt: selectedItem.actionPlanSchedules?.[0]?.okt || false,
-        nov: selectedItem.actionPlanSchedules?.[0]?.nov || false,
-        des: selectedItem.actionPlanSchedules?.[0]?.des || false
+        okt: false,
+        nov: false,
+        des: false
       },
       menengah: {
-        tw1: selectedItem.actionPlanSchedules?.[0]?.tw1 || false,
-        tw2: selectedItem.actionPlanSchedules?.[0]?.tw2 || false,
-        tw3: selectedItem.actionPlanSchedules?.[0]?.tw3 || false,
-        tw4: selectedItem.actionPlanSchedules?.[0]?.tw4 || false
+        tw1: false,
+        tw2: false,
+        tw3: false,
+        tw4: false
       },
       panjang: {
-        '2027': selectedItem.actionPlanSchedules?.[0]?.tahun2027 || false,
-        '2028': selectedItem.actionPlanSchedules?.[0]?.tahun2028 || false,
-        '2029': selectedItem.actionPlanSchedules?.[0]?.tahun2029 || false
+        '2027': false,
+        '2028': false,
+        '2029': false
       }
     }
   } : {
@@ -64,12 +64,6 @@
       }
     }
   };
-
-  // Helper untuk mendapatkan jadwal berdasarkan actionPlanSchedules
-  function getJadwalByPeriode(actionPlanSchedules: any[]) {
-    if (!actionPlanSchedules || actionPlanSchedules.length === 0) return null;
-    return actionPlanSchedules[0]; // Assuming one schedule per action plan
-  }
 
   // Helper untuk menentukan warna bullet
   function getBulletColor(isActive: boolean) {
@@ -211,20 +205,20 @@
 
     <tbody class="divide-y divide-gray-200">
       {#each items as item}
-        {@const jadwalData = getJadwalByPeriode(item.actionPlanSchedules)}
+        {@const jadwalData = item.jadwal}
         {@const isFullDone = (
-          (jadwalData && jadwalData.okt && jadwalData.nov && jadwalData.des &&
-           jadwalData.tw1 && jadwalData.tw2 && jadwalData.tw3 && jadwalData.tw4 &&
-           jadwalData.tahun2027 && jadwalData.tahun2028 && jadwalData.tahun2029)
+          (jadwalData && jadwalData.pendek.okt && jadwalData.pendek.nov && jadwalData.pendek.des &&
+           jadwalData.menengah.tw1 && jadwalData.menengah.tw2 && jadwalData.menengah.tw3 && jadwalData.menengah.tw4 &&
+           jadwalData.panjang["2027"] && jadwalData.panjang["2028"] && jadwalData.panjang["2029"])
         )}
         <tr class="hover:bg-gray-50">
           <!-- Pilar -->
           <td class="px-4 py-3 border align-top font-medium bg-gray-50 whitespace-normal">
-            {item.namaPilar || '-'}
+            {item.pilar || '-'}
           </td>
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
-            {item.namaKegiatan || '-'}
+            {item.kegiatan || '-'}
           </td>
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
@@ -232,17 +226,7 @@
           </td>
           <!-- Indikator Keberhasilan -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
-            {#if item.indikatorKeberhasilanDetails && item.indikatorKeberhasilanDetails.length > 0}
-              <ol class="list-decimal list-inside space-y-1 text-sm leading-relaxed">
-                {#each item.indikatorKeberhasilanDetails as indicator, index}
-                  <li class="text-gray-800 font-normal">
-                    <span class="font-medium text-gray-900">{index + 1}.</span> {indicator.deskripsi}
-                  </li>
-                {/each}
-              </ol>
-            {:else}
-              <span class="text-gray-400 italic">-</span>
-            {/if}
+            {item.indikator || '-'}
           </td>
           <!-- Jadwal Pelaksanaan -->
           {#if isFullDone}
@@ -251,37 +235,37 @@
             </td>
           {:else}
             <!-- Pendek -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.okt ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.okt ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.okt ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek.okt ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.nov ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.nov ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.nov ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek.nov ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.des ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.des ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.des ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek.des ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
             <!-- Menengah -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tw1 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw1 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tw2 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw2 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tw3 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw3 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tw4 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw4 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
             <!-- Panjang -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tahun2027 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tahun2027 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2027"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang["2027"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tahun2028 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tahun2028 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2028"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang["2028"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.tahun2029 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.tahun2029 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2029"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang["2029"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
           {/if}
           <!-- Aksi -->
@@ -308,7 +292,7 @@
       
       {#if items.length === 0}
         <tr>
-          <td colspan="17" class="px-6 py-8 text-center text-gray-500 border">
+          <td colspan="15" class="px-6 py-8 text-center text-gray-500 border">
             Belum ada data rencana aksi
           </td>
         </tr>
