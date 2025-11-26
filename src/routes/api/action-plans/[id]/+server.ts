@@ -126,32 +126,6 @@ export async function PUT({ params, request }: RequestEvent) {
             actionPlansId: id,
             picId: parseInt(picId)
           }).returning();
-
-          // Insert actionPlanProgress for each periode with initial capaian 0
-          const progressData: import('$lib/server/schemas/action-plan-schemas').NewActionPlanProgress[] = [];
-
-          if (body.jadwal?.pendek) {
-            if (body.jadwal.pendek.okt) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'okt', capaian: 0 });
-            if (body.jadwal.pendek.nov) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'nov', capaian: 0 });
-            if (body.jadwal.pendek.des) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'des', capaian: 0 });
-          }
-
-          if (body.jadwal?.menengah) {
-            if (body.jadwal.menengah.tw1) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'tw1', capaian: 0 });
-            if (body.jadwal.menengah.tw2) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'tw2', capaian: 0 });
-            if (body.jadwal.menengah.tw3) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'tw3', capaian: 0 });
-            if (body.jadwal.menengah.tw4) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: 'tw4', capaian: 0 });
-          }
-
-          if (body.jadwal?.panjang) {
-            if (body.jadwal.panjang['2027']) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: '2027', capaian: 0 });
-            if (body.jadwal.panjang['2028']) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: '2028', capaian: 0 });
-            if (body.jadwal.panjang['2029']) progressData.push({ actionPlanPicId: newActionPlanPic.id, periode: '2029', capaian: 0 });
-          }
-
-          if (progressData.length > 0) {
-            await tx.insert(actionPlanProgress).values(progressData);
-          }
         }
       }
 

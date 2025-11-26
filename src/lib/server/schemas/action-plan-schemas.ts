@@ -62,15 +62,16 @@ export const actionPlans = pgTable('action_plans', {
 
 // Tabel Action Plan Progress (menggantikan rencanaPic)
 export const actionPlanProgress = pgTable('action_plan_progress', {
-  id: serial('id').primaryKey(),
+  id: integer('id').primaryKey(),
   actionPlanPicId: integer('action_plan_pic_id').notNull().references(() => actionPlanPic.id, { onDelete: 'cascade' }),
-  periode: varchar('periode', { length: 20 }).notNull(),
-  capaian: integer('capaian').default(0),
+  target: integer('target'),
+  capaian: integer('capaian'),
+  bukti: text('bukti'),
+  penjelasan: text('penjelasan'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => {
   return {
     actionPlanPicIdIdx: index('action_plan_progress_action_plan_pic_id_idx').on(table.actionPlanPicId),
-    periodeIdx: index('action_plan_progress_periode_idx').on(table.periode),
   };
 });
 
@@ -129,20 +130,12 @@ export const selectActionPlanSchema = createSelectSchema(actionPlans);
 // Zod schemas for actionPlanProgress
 export const insertActionPlanProgressSchema = createInsertSchema(actionPlanProgress, {
   actionPlanPicId: z.number().int().min(1, 'Action Plan PIC wajib diisi'),
-  periode: z.string().min(1, 'Periode wajib diisi'),
-  capaian: z.number().optional(),
+  target: z.number().int().optional(),
+  capaian: z.number().int().optional(),
+  bukti: z.string().optional(),
+  penjelasan: z.string().optional(),
 });
 export const selectActionPlanProgressSchema = createSelectSchema(actionPlanProgress);
-
-// Zod schemas for target
-export const insertTargetSchema = createInsertSchema(target, {
-  actionPlansId: z.number().int().min(1, 'Action plan wajib dipilih'),
-  tahun: z.number().int().min(2000, 'Tahun tidak valid'),
-  nilaiTarget: z.number().optional(),
-  satuan: z.string().optional(),
-  keterangan: z.string().optional(),
-});
-export const selectTargetSchema = createSelectSchema(target);
 
 // Zod schemas for actionPlanSchedule
 export const insertActionPlanScheduleSchema = createInsertSchema(actionPlanSchedule, {
@@ -165,7 +158,5 @@ export type ActionPlan = typeof actionPlans.$inferSelect;
 export type NewActionPlan = typeof actionPlans.$inferInsert;
 export type ActionPlanProgress = typeof actionPlanProgress.$inferSelect;
 export type NewActionPlanProgress = typeof actionPlanProgress.$inferInsert;
-export type Target = typeof target.$inferSelect;
-export type NewTarget = typeof target.$inferInsert;
 export type ActionPlanSchedule = typeof actionPlanSchedule.$inferSelect;
 export type NewActionPlanSchedule = typeof actionPlanSchedule.$inferInsert;

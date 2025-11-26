@@ -145,12 +145,6 @@
 <main class="p-6 space-y-6">
 	<div class="flex justify-between items-center">
 		<h1 class="text-2xl font-bold">Rencana Aksi PEN 2025</h1>
-		<button
-			on:click={() => (isModalOpen = true)}
-			class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-		>
-			+ Tambah Aksi
-		</button>
 	</div>
 
 	<ActionPlanTable items={actionPlans} />

@@ -11,13 +11,13 @@
 		pilarId: number;
 		namaPilar: string;
 		output: string;
-		indikatorKeberhasilan: string;
 		status: string;
-		createdAt: Date | null;
-		updatedAt: Date | null;
-		activities: any[];
-		pics: any[];
-		rencanaPics: any[];
+		createdAt: string | null;
+		updatedAt: string | null;
+		actionPlanProgresses: any[];
+		actionPlanSchedules: any[];
+		actionPlanPics: any[];
+		indikatorKeberhasilanDetails: any[];
 	};
 	let actionPlans: ActionPlan[] = [];
 
@@ -29,7 +29,35 @@
 			const result = await response.json();
 			
 			if (result.success) {
-				actionPlans = result.data;
+				// Transform data to match table expectations
+				actionPlans = result.data.map((item: any) => ({
+					...item,
+					pilar: item.namaPilar,
+					kegiatan: item.namaKegiatan,
+					indikator: item.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi).join('; ') || '-',
+					jadwal: item.actionPlanSchedules.length > 0 ? {
+						pendek: {
+							okt: item.actionPlanSchedules[0].okt || false,
+							nov: item.actionPlanSchedules[0].nov || false,
+							des: item.actionPlanSchedules[0].des || false
+						},
+						menengah: {
+							tw1: item.actionPlanSchedules[0].tw1 || false,
+							tw2: item.actionPlanSchedules[0].tw2 || false,
+							tw3: item.actionPlanSchedules[0].tw3 || false,
+							tw4: item.actionPlanSchedules[0].tw4 || false
+						},
+						panjang: {
+							'2027': item.actionPlanSchedules[0].tahun2027 || false,
+							'2028': item.actionPlanSchedules[0].tahun2028 || false,
+							'2029': item.actionPlanSchedules[0].tahun2029 || false
+						}
+					} : {
+						pendek: { okt: false, nov: false, des: false },
+						menengah: { tw1: false, tw2: false, tw3: false, tw4: false },
+						panjang: { '2027': false, '2028': false, '2029': false }
+					}
+				}));
 			} else {
 				console.error('Failed to load action plans:', result.error);
 			}

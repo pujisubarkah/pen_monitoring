@@ -4,8 +4,8 @@ import { users, sessions, instansi, type User, type NewUser, type NewSession, ty
 import jwt from 'jsonwebtoken';
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN: string | number = process.env.JWT_EXPIRES_IN || '7d';
 
 // Hash password function using bcrypt
 export async function hashPassword(password: string): Promise<string> {
@@ -22,7 +22,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // JWT functions
 export function generateJWT(payload: { id: number; email: string; role: string; instansi_id?: number | null }): string {
-	return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+	return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as any });
 }
 
 export function verifyJWT(token: string): { id: number; email: string; role: string; instansi_id?: number | null } | null {

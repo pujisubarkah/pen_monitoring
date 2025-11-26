@@ -19,8 +19,9 @@
     pilarId: selectedItem.pilarId?.toString() || '',
     kegiatanId: selectedItem.kegiatanId?.toString() || '',
     output: selectedItem.output || '',
-    jadwalId: selectedItem.jadwalId || '',
-    indikatorKeberhasilan: selectedItem.indikator ? [selectedItem.indikator] : [],
+    jadwalId: selectedItem.actionPlanSchedules && selectedItem.actionPlanSchedules.length > 0 ? selectedItem.actionPlanSchedules[0].id?.toString() : '',
+    indikatorKeberhasilan: selectedItem.indikatorKeberhasilanDetails ? selectedItem.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi) : [],
+    pics: selectedItem.actionPlanPics ? selectedItem.actionPlanPics.map((pic: any) => pic.picId) : [],
     jadwal: selectedItem.jadwal || {
       pendek: {
         okt: false,
@@ -45,6 +46,7 @@
     output: '',
     jadwalId: '',
     indikatorKeberhasilan: [],
+    pics: [],
     jadwal: {
       pendek: {
         okt: false,
@@ -117,6 +119,7 @@
         indikatorKeberhasilan: formData.indikatorKeberhasilan,
         output: formData.output,
         jadwalId: isEditMode ? formData.jadwalId : undefined, // Include jadwalId for updates
+        pics: formData.pics, // Include selected PICs
         jadwal: formData.jadwal
       };
 

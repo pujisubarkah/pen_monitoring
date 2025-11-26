@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
 
   export let isOpen = false;
+  export let isEdit = false;
   export let formData = {
     pilar: '',
     kegiatan: '',
@@ -142,7 +143,7 @@
       aria-modal="true"
     >
   <div class="flex items-center justify-between px-8 py-6 rounded-t-2xl bg-linear-to-r from-blue-50 via-white to-blue-50 border-b-2 border-blue-100 shadow-sm">
-        <h2 id="modal-title" class="text-2xl font-extrabold text-blue-700 tracking-tight">Tambah Aksi</h2>
+        <h2 id="modal-title" class="text-2xl font-extrabold text-blue-700 tracking-tight">{isEdit ? 'Edit Progress' : 'Tambah Progress'}</h2>
         <button
           on:click={() => dispatch('close')}
           class="text-blue-400 hover:text-blue-700 transition-colors rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -305,7 +306,7 @@
             type="submit" 
             class="px-7 py-2 bg-linear-to-r from-blue-500 to-blue-700 text-white font-bold rounded-lg shadow-md hover:from-blue-600 hover:to-blue-800 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
           >
-            Simpan Aksi
+            {isEdit ? 'Update Progress' : 'Simpan Progress'}
           </button>
         </div>
       </form>

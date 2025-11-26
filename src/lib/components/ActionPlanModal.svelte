@@ -12,6 +12,7 @@
     output: '',
     jadwalId: '', // Add jadwalId for editing existing schedule
     indikatorKeberhasilan: [''], // Add indikator keberhasilan
+    pics: [], // Change back to array of IDs
     jadwal: {
       pendek: {
         okt: false,
@@ -86,6 +87,7 @@
         indikatorKeberhasilan: formData.indikatorKeberhasilan.filter(i => i.trim() !== ''),
         output: formData.output,
         jadwalId: formData.jadwalId, // Include jadwalId for updates
+        pics: formData.pics, // Include selected PIC IDs
         jadwal: formData.jadwal
       };
 
@@ -111,6 +113,7 @@
       indikatorKeberhasilan: [''], // Reset indikator keberhasilan
       output: '',
       jadwalId: '', // Reset jadwalId
+      pics: [], // Reset pics to empty array
       jadwal: {
         pendek: {
           okt: false,
@@ -174,6 +177,7 @@
   }
 
   onMount(() => {
+    fetchInstansi();
     fetchKegiatan();
     fetchPilar();
   });
@@ -298,6 +302,39 @@
                   <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
                 {/each}
               </select>
+            {/if}
+          </div>
+
+          <!-- PIC (Penanggung Jawab) -->
+          <div>
+            <label for="pic-checkbox-0" class="block text-sm font-medium text-gray-700 mb-2">Penanggung Jawab (PIC)</label>
+            {#if loadingInstansi}
+              <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                <span class="text-gray-500 text-sm">Memuat data instansi...</span>
+              </div>
+            {:else if instansiError}
+              <div class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50">
+                <span class="text-red-600 text-sm">{instansiError}</span>
+              </div>
+            {:else}
+              <div class="max-h-40 overflow-y-auto border border-gray-300 rounded-md">
+                {#each instansiList as instansi, i}
+                  <label class="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0">
+                    <input
+                      id={"pic-checkbox-" + i}
+                      type="checkbox"
+                      value={instansi.id}
+                      bind:group={formData.pics}
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span class="ml-3 text-sm font-medium text-gray-900">{instansi.namaInstansi}</span>
+                  </label>
+                {/each}
+              </div>
+              {#if formData.pics.length === 0}
+                <p class="text-gray-500 text-sm mt-1">Pilih minimal satu penanggung jawab</p>
+              {/if}
             {/if}
           </div>
 
