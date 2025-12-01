@@ -5,7 +5,8 @@
 
   export let isOpen = false;
   export let editMode = false;
-  export const selectedItem: any = null;
+  // export const selectedItem; // Uncomment if you need external reference only
+  // or simply remove the line if not needed:
   export let formData = {
     pilarId: '',
     kegiatanId: '',
@@ -181,10 +182,6 @@
     fetchKegiatan();
     fetchPilar();
   });
-
-  $: if (!isOpen) {
-    resetForm();
-  }
 
   $: filteredKegiatanList = (function () {
     if (!formData.pilarId) return kegiatanList;

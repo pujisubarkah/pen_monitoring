@@ -1,13 +1,29 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users, insertUserSchema } from '$lib/server/schema';
+import { users, insertUserSchema, instansi } from '$lib/server/schema';
+import { eq } from 'drizzle-orm';
 import { createUser, findUserByEmail } from '$lib/server/auth';
 
 // GET /api/users - list users (omit password)
 export const GET: RequestHandler = async () => {
   try {
-    const rows = await db.select().from(users);
+    const rows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        is_active: users.is_active,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        instansi_id: users.instansi_id,
+        is_verified: users.is_verified,
+        nama_instansi: instansi.namaInstansi,
+      })
+      .from(users)
+      .leftJoin(instansi, eq(users.instansi_id, instansi.id));
+
     const data = rows.map((u) => ({
       id: u.id,
       name: u.name,
@@ -16,7 +32,7 @@ export const GET: RequestHandler = async () => {
       is_active: u.is_active,
       created_at: u.created_at,
       updated_at: u.updated_at,
-      instansi_id: u.instansi_id,
+      nama_instansi: u.nama_instansi || null,
       is_verified: u.is_verified,
     }));
 
@@ -49,16 +65,34 @@ export const POST: RequestHandler = async ({ request }) => {
       role: parsed.role,
     });
 
+    // Fetch the created user with instansi join
+    const [userWithInstansi] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        is_active: users.is_active,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        instansi_id: users.instansi_id,
+        is_verified: users.is_verified,
+        nama_instansi: instansi.namaInstansi,
+      })
+      .from(users)
+      .leftJoin(instansi, eq(users.instansi_id, instansi.id))
+      .where(eq(users.id, created.id));
+
     const safe = {
-      id: created.id,
-      name: created.name,
-      email: created.email,
-      role: created.role,
-      is_active: created.is_active,
-      created_at: created.created_at,
-      updated_at: created.updated_at,
-      instansi_id: created.instansi_id,
-      is_verified: created.is_verified,
+      id: userWithInstansi.id,
+      name: userWithInstansi.name,
+      email: userWithInstansi.email,
+      role: userWithInstansi.role,
+      is_active: userWithInstansi.is_active,
+      created_at: userWithInstansi.created_at,
+      updated_at: userWithInstansi.updated_at,
+      nama_instansi: userWithInstansi.nama_instansi || null,
+      is_verified: userWithInstansi.is_verified,
     };
 
     return json({ success: true, data: safe }, { status: 201 });

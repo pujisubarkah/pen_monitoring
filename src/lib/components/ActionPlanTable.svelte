@@ -308,7 +308,6 @@
 <ActionPlanModal
   bind:isOpen={isModalOpen}
   editMode={isEditMode}
-  {selectedItem}
   bind:formData={modalFormData}
   on:submit={handleModalSubmit}
   on:close={handleModalClose}

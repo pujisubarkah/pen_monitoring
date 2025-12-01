@@ -5,6 +5,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Edit, Trash2 } from 'lucide-svelte';
+	import { toastStore } from '$lib/stores/toastStore';
 
 
 	type User = {
@@ -14,7 +15,7 @@
 		role: string;
 		is_active: boolean;
 		is_verified: boolean;
-		instansi_id?: number | null;
+		nama_instansi?: string | null;
 		created_at: string;
 		updated_at: string;
 	};
@@ -63,6 +64,15 @@
 	}
 
 	async function verifyUser(user: User) {
+		// Show confirmation dialog
+		const isCurrentlyVerified = user.is_verified;
+		const action = isCurrentlyVerified ? 'membatalkan verifikasi' : 'memverifikasi';
+		const confirmMessage = `Apakah Anda yakin akan ${action} akun ${user.name}?`;
+
+		if (!confirm(confirmMessage)) {
+			return;
+		}
+
 		try {
 			const response = await fetch(`/api/users/${user.id}`, {
 				method: 'PUT',
@@ -75,11 +85,13 @@
 			if (result.success) {
 				// Update local state
 				users = users.map(u => u.id === user.id ? { ...u, is_verified: !u.is_verified } : u);
+				toastStore.success(`Akun ${user.name} berhasil ${isCurrentlyVerified ? 'dibatalkan verifikasinya' : 'diverifikasi'}`);
 			} else {
-				alert(result.message || 'Gagal memverifikasi pengguna');
+				toastStore.error(result.message || 'Gagal memverifikasi pengguna');
 			}
 		} catch (err) {
-			alert('Terjadi kesalahan saat memverifikasi pengguna');
+			console.error('Error verifying user:', err);
+			toastStore.error('Terjadi kesalahan saat memverifikasi pengguna');
 		}
 	}
 
@@ -209,7 +221,7 @@
 								 <td class="px-4 py-2">{user.name}</td>
 								 <td class="px-4 py-2">{user.email}</td>
 								 <td class="px-4 py-2 capitalize">{user.role}</td>
-								 <td class="px-4 py-2">{user.instansi_id ?? '-'}</td>
+								 <td class="px-4 py-2">{user.nama_instansi ?? '-'}</td>
 										 <td class="px-4 py-2">
 											 <button
 												 class="px-3 py-1 rounded-full text-xs font-semibold focus:outline-none transition-colors

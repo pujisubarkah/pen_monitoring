@@ -1,7 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { users } from '$lib/server/schema';
+import { users, instansi } from '$lib/server/schema';
 import { findUserByEmail, findUserById, hashPassword } from '$lib/server/auth';
 import { eq } from 'drizzle-orm';
 
@@ -18,8 +18,24 @@ export const GET: RequestHandler = async ({ params }) => {
       throw error(400, { message: 'ID pengguna tidak valid' });
     }
 
-    // Get user data
-    const userData = await findUserById(userId);
+    // Get user data with instansi join
+    const [userData] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        is_active: users.is_active,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        instansi_id: users.instansi_id,
+        is_verified: users.is_verified,
+        nama_instansi: instansi.namaInstansi,
+      })
+      .from(users)
+      .leftJoin(instansi, eq(users.instansi_id, instansi.id))
+      .where(eq(users.id, userId));
+
     if (!userData) {
       throw error(404, { message: 'Pengguna tidak ditemukan' });
     }
@@ -32,7 +48,7 @@ export const GET: RequestHandler = async ({ params }) => {
       is_active: userData.is_active,
       created_at: userData.created_at,
       updated_at: userData.updated_at,
-      instansi_id: userData.instansi_id,
+      nama_instansi: userData.nama_instansi || null,
       is_verified: userData.is_verified,
     };
 
@@ -111,14 +127,34 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       throw error(404, { message: 'Pengguna tidak ditemukan' });
     }
 
-    const updated = result[0];
+    // Fetch updated user with instansi join
+    const [updatedUser] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        is_active: users.is_active,
+        created_at: users.created_at,
+        updated_at: users.updated_at,
+        instansi_id: users.instansi_id,
+        is_verified: users.is_verified,
+        nama_instansi: instansi.namaInstansi,
+      })
+      .from(users)
+      .leftJoin(instansi, eq(users.instansi_id, instansi.id))
+      .where(eq(users.id, userId));
+
     const safe = {
-      id: updated.id,
-      name: updated.name,
-      email: updated.email,
-      role: updated.role,
-      createdAt: updated.created_at,
-      updatedAt: updated.updated_at,
+      id: updatedUser.id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      is_active: updatedUser.is_active,
+      created_at: updatedUser.created_at,
+      updated_at: updatedUser.updated_at,
+      nama_instansi: updatedUser.nama_instansi || null,
+      is_verified: updatedUser.is_verified,
     };
 
     return json({ success: true, data: safe });
