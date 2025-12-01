@@ -205,6 +205,7 @@
       <tr>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PILAR</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">KEGIATAN/AKSI</th>
+        <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PIC</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">OUTPUT</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">INDIKATOR KEBERHASILAN</th>
         <th colspan="10" class="px-4 py-2 border text-center font-medium text-gray-700 bg-blue-50">JADWAL PELAKSANAAN</th>
@@ -254,6 +255,20 @@
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             {item.kegiatan || '-'}
+          </td>
+          <!-- PIC -->
+          <td class="px-4 py-3 border align-top whitespace-normal">
+            {#if item.actionPlanPics && item.actionPlanPics.length > 0}
+              <div class="flex flex-wrap gap-1">
+                {#each item.actionPlanPics as pic}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                    {pic.namaInstansi || 'Unknown'}
+                  </span>
+                {/each}
+              </div>
+            {:else}
+              -
+            {/if}
           </td>
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
@@ -327,7 +342,7 @@
       
       {#if items.length === 0}
         <tr>
-          <td colspan="15" class="px-6 py-8 text-center text-gray-500 border">
+          <td colspan="16" class="px-6 py-8 text-center text-gray-500 border">
             Belum ada data rencana aksi
           </td>
         </tr>
