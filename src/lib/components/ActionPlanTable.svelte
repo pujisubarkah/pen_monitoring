@@ -13,34 +13,7 @@
   let isModalOpen = false;
   let isEditMode = false;
   let selectedItem: any = null;
-
-  // Initialize modal form data reactively
-  $: modalFormData = isEditMode && selectedItem ? {
-    pilarId: selectedItem.pilarId?.toString() || '',
-    kegiatanId: selectedItem.kegiatanId?.toString() || '',
-    output: selectedItem.output || '',
-    jadwalId: selectedItem.actionPlanSchedules && selectedItem.actionPlanSchedules.length > 0 ? selectedItem.actionPlanSchedules[0].id?.toString() : '',
-    indikatorKeberhasilan: selectedItem.indikatorKeberhasilanDetails ? selectedItem.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi) : [],
-    pics: selectedItem.actionPlanPics ? selectedItem.actionPlanPics.map((pic: any) => pic.picId) : [],
-    jadwal: selectedItem.jadwal || {
-      pendek: {
-        okt: false,
-        nov: false,
-        des: false
-      },
-      menengah: {
-        tw1: false,
-        tw2: false,
-        tw3: false,
-        tw4: false
-      },
-      panjang: {
-        '2027': false,
-        '2028': false,
-        '2029': false
-      }
-    }
-  } : {
+  let modalFormData: any = {
     pilarId: '',
     kegiatanId: '',
     output: '',
@@ -67,6 +40,36 @@
     }
   };
 
+  // Initialize modal form data reactively (only for non-edit mode)
+  $: if (!isEditMode) {
+    modalFormData = {
+      pilarId: '',
+      kegiatanId: '',
+      output: '',
+      jadwalId: '',
+      indikatorKeberhasilan: [],
+      pics: [],
+      jadwal: {
+        pendek: {
+          okt: false,
+          nov: false,
+          des: false
+        },
+        menengah: {
+          tw1: false,
+          tw2: false,
+          tw3: false,
+          tw4: false
+        },
+        panjang: {
+          '2027': false,
+          '2028': false,
+          '2029': false
+        }
+      }
+    };
+  }
+
   // Helper untuk menentukan warna bullet
   function getBulletColor(isActive: boolean) {
     return isActive ? 'bg-green-500' : 'bg-gray-200';
@@ -76,6 +79,35 @@
   async function handleEdit(item: any) {
     isEditMode = true;
     selectedItem = item;
+    
+    // Directly set modal form data
+    modalFormData = {
+      pilarId: item.pilarId !== undefined && item.pilarId !== null ? item.pilarId : (item.kegiatan?.pilarId ? item.kegiatan.pilarId : ''),
+      kegiatanId: item.kegiatanId !== undefined && item.kegiatanId !== null ? item.kegiatanId : '',
+      output: item.output || '',
+      jadwalId: item.actionPlanSchedules && item.actionPlanSchedules.length > 0 ? item.actionPlanSchedules[0].id : '',
+      indikatorKeberhasilan: item.indikatorKeberhasilanDetails ? item.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi) : [],
+      pics: item.actionPlanPics ? item.actionPlanPics.map((pic: any) => pic.picId) : [],
+      jadwal: item.jadwal || {
+        pendek: {
+          okt: false,
+          nov: false,
+          des: false
+        },
+        menengah: {
+          tw1: false,
+          tw2: false,
+          tw3: false,
+          tw4: false
+        },
+        panjang: {
+          '2027': false,
+          '2028': false,
+          '2029': false
+        }
+      }
+    };
+    
     isModalOpen = true;
   }
 
