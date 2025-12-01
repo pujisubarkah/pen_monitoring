@@ -2,7 +2,7 @@
 import { json, error, type RequestEvent } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { actionPlans, actionPlanProgress, instansi, kegiatan, pilar, actionPlanPic, actionPlanSchedule, indikatorKeberhasilanDetail } from '$lib/server/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 /**
  * Get a single action plan with related data
@@ -110,7 +110,20 @@ export async function PUT({ params, request }: RequestEvent) {
         .where(eq(actionPlans.id, id))
         .returning();
 
-      // Delete existing actionPlanPic records (related records will be deleted via cascade)
+      // Get existing action plan pic IDs
+      const existingPicIds = await tx
+        .select({ id: actionPlanPic.id })
+        .from(actionPlanPic)
+        .where(eq(actionPlanPic.actionPlansId, id));
+
+      // Delete action plan progress records for existing PICs
+      if (existingPicIds.length > 0) {
+        await tx.delete(actionPlanProgress).where(
+          inArray(actionPlanProgress.actionPlanPicId, existingPicIds.map(pic => pic.id))
+        );
+      }
+
+      // Delete existing actionPlanPic records
       await tx.delete(actionPlanPic).where(eq(actionPlanPic.actionPlansId, id));
       // Don't delete actionPlanSchedule here - we'll update it instead
 
@@ -211,20 +224,49 @@ export async function DELETE({ params }: RequestEvent) {
     }
 
     // Start transaction
-    await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
+      console.log('Starting delete transaction for action plan:', id);
+
       // Check if action plan exists
       const existing = await tx
         .select()
         .from(actionPlans)
         .where(eq(actionPlans.id, id));
+
+      console.log('Found existing action plans:', existing.length);
+
       if (existing.length === 0) {
         throw error(404, 'Action plan not found');
       }
-      // Delete related actionPlanPic records first (related records will be deleted via cascade)
-      await tx.delete(actionPlanPic).where(eq(actionPlanPic.actionPlansId, id));
-      // Delete action plan
-      await tx.delete(actionPlans).where(eq(actionPlans.id, id));
+
+      // Get all action plan pic IDs for this action plan
+      const picIds = await tx
+        .select({ id: actionPlanPic.id })
+        .from(actionPlanPic)
+        .where(eq(actionPlanPic.actionPlansId, id));
+
+      console.log('Found PIC IDs to delete:', picIds.map(p => p.id));
+
+      // Delete action plan progress records for these PICs
+      if (picIds.length > 0) {
+        const deletedProgress = await tx.delete(actionPlanProgress).where(
+          inArray(actionPlanProgress.actionPlanPicId, picIds.map(pic => pic.id))
+        );
+        console.log('Deleted action plan progress records:', deletedProgress);
+      }
+
+      // Delete action plan pic records
+      const deletedPics = await tx.delete(actionPlanPic).where(eq(actionPlanPic.actionPlansId, id));
+      console.log('Deleted action plan pic records:', deletedPics);
+
+      // Delete action plan (cascade will handle other related records)
+      const deletedPlans = await tx.delete(actionPlans).where(eq(actionPlans.id, id));
+      console.log('Deleted action plan records:', deletedPlans);
+
+      return { success: true };
     });
+
+    console.log('Transaction completed successfully:', result);
 
     return json({
       success: true,
