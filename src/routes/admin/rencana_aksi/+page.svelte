@@ -25,7 +25,7 @@
 
 	async function loadActionPlans() {
 		try {
-			const response = await fetch('/api/action-plans');
+			const response = await fetch('/api/action-plans?limit=full');
 			const result = await response.json();
 			
 			if (result.success) {

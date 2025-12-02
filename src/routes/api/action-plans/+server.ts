@@ -1,16 +1,20 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { actionPlans, actionPlanProgress, instansi, kegiatan, pilar, actionPlanPic, indikatorKeberhasilanDetail, actionPlanSchedule } from '$lib/server/schema';
-import { eq, desc, like, and } from 'drizzle-orm';
+import { eq, desc, like, and, or } from 'drizzle-orm';
 
 export async function GET({ url }) {
   try {
     const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const limitRaw = url.searchParams.get('limit');
     const search = url.searchParams.get('search') || '';
     const status = url.searchParams.get('status') || '';
 
-    const offset = (page - 1) * limit;
+    // Support returning full dataset by passing `?limit=full` or `?limit=all` or `?limit=0` or `?limit=-1`
+    const returnAll = limitRaw === 'full' || limitRaw === 'all' || limitRaw === '0' || limitRaw === '-1';
+    const limit = returnAll ? undefined : parseInt(limitRaw || '10');
+
+    const offset = limit ? (page - 1) * limit : 0;
 
     let whereConditions = [];
 
@@ -22,8 +26,24 @@ export async function GET({ url }) {
       whereConditions.push(eq(actionPlans.status, status as 'draft' | 'active' | 'completed'));
     }
 
+    // If pagination requested (not returnAll) we must limit by distinct actionPlans
+    let idFilter: number[] | undefined;
+    if (!returnAll && typeof limit === 'number') {
+      // Get the actionPlans ids respecting the same where conditions and ordering
+      const idRows = await db
+        .select({ id: actionPlans.id })
+        .from(actionPlans)
+        .leftJoin(kegiatan, eq(actionPlans.kegiatanId, kegiatan.id))
+        .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+        .orderBy(actionPlans.id)
+        .limit(limit)
+        .offset(offset);
+
+      idFilter = idRows.map((r: any) => r.id);
+    }
+
     // Get action plans with related data
-    const data = await db
+    let query = db
       .select({
         id: actionPlans.id,
         kegiatanId: actionPlans.kegiatanId,
@@ -63,10 +83,26 @@ export async function GET({ url }) {
       .leftJoin(actionPlanSchedule, eq(actionPlans.id, actionPlanSchedule.actionPlansId))
       .leftJoin(instansi, eq(actionPlanPic.picId, instansi.id))
       .leftJoin(indikatorKeberhasilanDetail, eq(actionPlans.id, indikatorKeberhasilanDetail.actionPlansId))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(actionPlans.id)
-      .limit(limit)
-      .offset(offset);
+      .where(
+        // If we have an idFilter, combine original whereConditions with an OR list of ids
+        idFilter && idFilter.length > 0
+          ? and(
+              ...(whereConditions.length > 0 ? whereConditions : []),
+              or(...idFilter.map((i) => eq(actionPlans.id, i)))
+            )
+          : whereConditions.length > 0
+          ? and(...whereConditions)
+          : undefined
+      )
+      .orderBy(actionPlans.id);
+
+    // Apply pagination only when not requesting full dataset
+    let data;
+    if (!returnAll && typeof limit === 'number') {
+      data = await query.limit(limit).offset(offset);
+    } else {
+      data = await query;
+    }
 
     // Group the related data
     type GroupedActionPlan = {
@@ -141,15 +177,25 @@ export async function GET({ url }) {
 
     const total = totalResult[0]?.count || 0;
 
+    // If returning full dataset, set pagination to show full count
+    const responsePagination = returnAll
+      ? {
+          page: 1,
+          limit: total,
+          total,
+          totalPages: 1,
+        }
+      : {
+          page,
+          limit,
+          total,
+          totalPages: limit ? Math.ceil(total / limit) : 1,
+        };
+
     return json({
       success: true,
       data: result,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      pagination: responsePagination,
     });
   } catch (error) {
     console.error('Error fetching action plans:', error);
