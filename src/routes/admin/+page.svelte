@@ -2,8 +2,61 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
-	// Store for admin info (optional, can be extended)
+	import StatCard from '$lib/components/cards/StatCard.svelte';
+	import ProgressChart from '$lib/components/charts/ProgressChart.svelte';
+
+	// Store for admin info
 	export const adminInfo = writable({ adminName: '' });
+
+	// Dummy data for dashboard stats
+	let stats = $state([
+		{
+			title: 'Total Pengguna',
+			value: 1250,
+			subtitle: 'Pengguna terdaftar',
+			icon: '👥',
+			trend: 'up' as const,
+			trendValue: '+12%',
+			color: 'blue' as const
+		},
+		{
+			title: 'Rencana Aksi',
+			value: 89,
+			subtitle: 'Aksi aktif',
+			icon: '📋',
+			trend: 'up' as const,
+			trendValue: '+5%',
+			color: 'green' as const
+		},
+		{
+			title: 'Progress Rata-rata',
+			value: '78%',
+			subtitle: 'Pencapaian target',
+			icon: '📈',
+			trend: 'up' as const,
+			trendValue: '+3%',
+			color: 'purple' as const
+		},
+		{
+			title: 'Instansi Terlibat',
+			value: 45,
+			subtitle: 'Instansi aktif',
+			icon: '🏢',
+			trend: 'neutral' as const,
+			trendValue: '0%',
+			color: 'yellow' as const
+		}
+	]);
+
+	// Dummy data for progress chart
+	let progressData = $state([
+		{ date: 'Jan', value: 20, label: 'Januari' },
+		{ date: 'Feb', value: 35, label: 'Februari' },
+		{ date: 'Mar', value: 45, label: 'Maret' },
+		{ date: 'Apr', value: 60, label: 'April' },
+		{ date: 'May', value: 72, label: 'Mei' },
+		{ date: 'Jun', value: 78, label: 'Juni' }
+	]);
 
 	function updateAdminFromLocalStorage() {
 		if (typeof localStorage !== 'undefined') {
@@ -34,16 +87,96 @@
 	<title>Admin Dashboard - PEN Monitor</title>
 </svelte:head>
 
-<main class="flex flex-col items-center justify-center min-h-[60vh] p-8">
-	<div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
-		<h1 class="text-2xl font-bold text-blue-700 mb-2">Selamat Datang, {$adminInfo.adminName}!</h1>
-		<p class="text-lg mb-6">Ini adalah dashboard Admin PEN Monitoring. Silakan gunakan menu di samping untuk mengelola data dan monitoring aksi PEN.</p>
+<main class="min-h-screen bg-linear-to-br from-blue-50 via-white to-green-50 p-6">
+	<div class="max-w-7xl mx-auto">
+		<!-- Header -->
+		<div class="mb-8">
+			<h1 class="text-3xl font-bold text-gray-900 mb-2 animate-fade-in">
+				Selamat Datang, {$adminInfo.adminName}!
+			</h1>
+			<p class="text-lg text-gray-600">
+				Dashboard Admin PEN Monitoring - Pantau dan kelola progress aksi PEN dengan mudah.
+			</p>
+		</div>
+
+		<!-- Stats Cards Grid -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+			{#each stats as stat, index}
+				<div class="animate-slide-up" style="animation-delay: {index * 0.1}s">
+					<StatCard
+						title={stat.title}
+						value={stat.value}
+						subtitle={stat.subtitle}
+						icon={stat.icon}
+						trend={stat.trend}
+						trendValue={stat.trendValue}
+						color={stat.color}
+					/>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Charts Section -->
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+			<!-- Progress Chart -->
+			<div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.4s">
+				<h2 class="text-xl font-semibold text-gray-900 mb-4">Progress Bulanan</h2>
+				<ProgressChart data={progressData} title="Progress Pencapaian Target" />
+			</div>
+
+			<!-- Quick Actions -->
+			<div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.5s">
+				<h2 class="text-xl font-semibold text-gray-900 mb-4">Aksi Cepat</h2>
+				<div class="space-y-3">
+					<button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+						📊 Lihat Laporan
+					</button>
+					<button class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+						➕ Tambah Rencana Aksi
+					</button>
+					<button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+						👥 Kelola Pengguna
+					</button>
+					<button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+						📍 Lihat Peta Kinerja
+					</button>
+				</div>
+			</div>
+		</div>
 	</div>
 </main>
 
 <style>
-	main {
-		background: linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%);
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes slide-up {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-fade-in {
+		animation: fade-in 0.6s ease-out forwards;
+		opacity: 0;
+	}
+
+	.animate-slide-up {
+		animation: slide-up 0.5s ease-out forwards;
+		opacity: 0;
 	}
 </style>
 

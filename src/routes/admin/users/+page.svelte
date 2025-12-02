@@ -4,9 +4,9 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Edit, Trash2 } from 'lucide-svelte';
+	import { Edit, Trash2, Search, Plus, Users, Shield, UserCheck } from 'lucide-svelte';
 	import { toastStore } from '$lib/stores/toastStore';
-
+	import StatCard from '$lib/components/cards/StatCard.svelte';
 
 	type User = {
 		id: number;
@@ -20,22 +20,84 @@
 		updated_at: string;
 	};
 
-	let users: User[] = [];
-	let loading = true;
-	let error = '';
+	type Stat = {
+		title: string;
+		value: number;
+		subtitle: string;
+		icon: string;
+		color: 'blue' | 'red' | 'green' | 'yellow';
+	};
+
+	let users = $state<User[]>([]);
+	let loading = $state(true);
+	let error = $state('');
+	let searchQuery = $state('');
+
+	// Computed stats
+	let stats = $state<Stat[]>([]);
+
+	// Filtered users based on search
+	let filteredUsers = $state<User[]>([]);
+
+	$effect(() => {
+		stats = [
+			{
+				title: 'Total Pengguna',
+				value: users.length,
+				subtitle: 'Pengguna terdaftar',
+				icon: '👥',
+				color: 'blue'
+			},
+			{
+				title: 'Administrator',
+				value: users.filter(u => u.role === 'admin').length,
+				subtitle: 'Pengguna admin',
+				icon: '🛡️',
+				color: 'red'
+			},
+			{
+				title: 'Terverifikasi',
+				value: users.filter(u => u.is_verified).length,
+				subtitle: 'Akun terverifikasi',
+				icon: '✅',
+				color: 'green'
+			},
+			{
+				title: 'Belum Verifikasi',
+				value: users.length - users.filter(u => u.is_verified).length,
+				subtitle: 'Menunggu verifikasi',
+				icon: '⏳',
+				color: 'yellow'
+			}
+		];
+	});
+
+	$effect(() => {
+		if (!searchQuery) {
+			filteredUsers = users;
+		} else {
+			const query = searchQuery.toLowerCase();
+			filteredUsers = users.filter((user: User) =>
+				user.name.toLowerCase().includes(query) ||
+				user.email.toLowerCase().includes(query) ||
+				user.role.toLowerCase().includes(query) ||
+				(user.nama_instansi && user.nama_instansi.toLowerCase().includes(query))
+			);
+		}
+	});
 
 	// Edit modal state
-	let showEditModal = false;
-	let editingUser: User | null = null;
-	let editForm = {
+	let showEditModal = $state(false);
+	let editingUser = $state<User | null>(null);
+	let editForm = $state({
 		name: '',
 		email: '',
 		role: 'user'
-	};
+	});
 
 	// Delete confirmation state
-	let showDeleteConfirm = false;
-	let deletingUser: User | null = null;
+	let showDeleteConfirm = $state(false);
+	let deletingUser = $state<User | null>(null);
 
 	async function fetchUsers() {
 		try {
@@ -105,7 +167,8 @@
 		showEditModal = true;
 	}
 
-	async function handleEdit() {
+	async function handleEdit(event: Event) {
+		event.preventDefault();
 		if (!editingUser) return;
 
 		try {
@@ -173,98 +236,187 @@
 	});
 </script>
 
-<div class="max-w-6xl space-y-6">
-	<div>
-		<h1 class="text-3xl font-bold text-gray-900">Manajemen User</h1>
-		<p class="text-gray-600 mt-2">Kelola pengguna sistem monitoring</p>
-	</div>
-
-	<div class="bg-white rounded-lg shadow-md p-6">
-		<div class="flex justify-between items-center mb-6">
-			<h2 class="text-xl font-semibold">Daftar User</h2>
-			<button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-				Tambah User
-			</button>
+<div class="min-h-screen bg-linear-to-br from-blue-50 via-white to-green-50 p-6">
+	<div class="max-w-7xl mx-auto space-y-6">
+		<!-- Header -->
+		<div class="animate-fade-in">
+			<h1 class="text-3xl font-bold text-gray-900">Manajemen User</h1>
+			<p class="text-gray-600 mt-2">Kelola pengguna sistem monitoring dengan mudah dan efisien.</p>
 		</div>
 
-		{#if loading}
-			<div class="text-center py-8">
-				<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-				<p class="text-gray-600 mt-2">Memuat data...</p>
+		<!-- Stats Cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up" style="animation-delay: 0.1s">
+			{#each stats as stat, index}
+				<div style="animation-delay: {index * 0.1}s">
+					<StatCard
+						title={stat.title}
+						value={stat.value}
+						subtitle={stat.subtitle}
+						icon={stat.icon}
+						color={stat.color}
+					/>
+				</div>
+			{/each}
+		</div>
+
+		<!-- Users Table Card -->
+		<div class="bg-white rounded-xl shadow-lg overflow-hidden animate-fade-in" style="animation-delay: 0.3s">
+			<div class="p-6 border-b border-gray-200">
+				<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+					<h2 class="text-xl font-semibold text-gray-900">Daftar Pengguna</h2>
+					<div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+						<!-- Search Input -->
+						<div class="relative">
+							<Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+							<input
+								type="text"
+								placeholder="Cari pengguna..."
+								bind:value={searchQuery}
+								class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
+							/>
+						</div>
+						<button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2 font-medium">
+							<Plus size={20} />
+							Tambah User
+						</button>
+						</div>
+				</div>
 			</div>
-		{:else if error}
-			<div class="text-center py-8">
-				<div class="text-red-600 mb-2">⚠️ {error}</div>
-				<button
-					on:click={fetchUsers}
-					class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-				>
-					Coba Lagi
-				</button>
-			</div>
+
+			<div class="p-6">
+				{#if loading}
+					<div class="text-center py-12">
+						<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<p class="text-gray-600 text-lg">Memuat data pengguna...</p>
+					</div>
+				{:else if error}
+					<div class="text-center py-12">
+						<div class="text-red-500 mb-4 text-6xl">⚠️</div>
+						<p class="text-red-600 text-lg mb-4">{error}</p>
+						<button
+							onclick={fetchUsers}
+							class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+						>
+							Coba Lagi
+						</button>
+					</div>
 		{:else}
-			<div class="overflow-x-auto mx-auto max-w-4xl">
-				 <table class="w-full table-auto">
-					 <thead>
-						 <tr class="bg-gray-50">
-							 <th class="px-4 py-2 text-left">Nama</th>
-							 <th class="px-4 py-2 text-left">Email</th>
-							 <th class="px-4 py-2 text-left">Role</th>
-							 <th class="px-4 py-2 text-left">Instansi</th>
-							<th class="px-4 py-2 text-left">Status</th>
-							 <th class="px-4 py-2 text-left">Aksi</th>
-						 </tr>
-					 </thead>
-					 <tbody>
-						 {#each users as user (user.id)}
-							 <tr class="border-t hover:bg-gray-50">
-								 <td class="px-4 py-2">{user.name}</td>
-								 <td class="px-4 py-2">{user.email}</td>
-								 <td class="px-4 py-2 capitalize">{user.role}</td>
-								 <td class="px-4 py-2">{user.nama_instansi ?? '-'}</td>
-										 <td class="px-4 py-2">
-											 <button
-												 class="px-3 py-1 rounded-full text-xs font-semibold focus:outline-none transition-colors
-													 {user.is_verified ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}"
-												 on:click={() => verifyUser(user)}
-												 title={user.is_verified ? 'Batalkan verifikasi' : 'Verifikasi user'}
-											 >
-												 {user.is_verified ? 'Terverifikasi' : 'Belum'}
-											 </button>
-										 </td>
-								 <td class="px-4 py-2">
-									 <div class="flex space-x-2">
-										 <button
-											 on:click={() => openEditModal(user)}
-											 class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-											 title="Edit"
-										 >
-											 <Edit size={16} />
-										 </button>
-										 <button
-											 on:click={() => openDeleteConfirm(user)}
-											 class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-											 title="Hapus"
-										 >
-											 <Trash2 size={16} />
-										 </button>
-									 </div>
-								 </td>
-							 </tr>
-						 {/each}
-						 {#if users.length === 0}
-							 <tr>
-								 <td colspan="9" class="px-4 py-8 text-center text-gray-500">
-									 Tidak ada data pengguna
-								 </td>
-							 </tr>
-						 {/if}
-					 </tbody>
-				 </table>
+			<div class="overflow-x-auto">
+				<table class="w-full">
+					<thead class="bg-gray-50">
+						<tr>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Pengguna</th>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Instansi</th>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+							<th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-gray-200">
+						{#each filteredUsers as user, i (user.id)}
+							<tr class="hover:bg-gray-50 transition-colors duration-150">
+								<td class="px-6 py-4 whitespace-nowrap">
+									<div class="flex items-center">
+										<div class="w-10 h-10 bg-linear-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+											{user.name.charAt(0).toUpperCase()}
+										</div>
+										<div>
+											<div class="text-sm font-medium text-gray-900">{user.name}</div>
+											<div class="text-sm text-gray-500">ID: {user.id}</div>
+										</div>
+									</div>
+								</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
+								<td class="px-6 py-4 whitespace-nowrap">
+									<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize
+										{user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+										{user.role}
+									</span>
+								</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.nama_instansi ?? '-'}</td>
+								<td class="px-6 py-4 whitespace-nowrap">
+									<button
+										onclick={() => verifyUser(user)}
+										class="inline-flex px-3 py-1 rounded-full text-xs font-semibold transition-colors duration-200 focus:outline-none
+											{user.is_verified ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}"
+										title={user.is_verified ? 'Batalkan verifikasi' : 'Verifikasi user'}
+									>
+										{user.is_verified ? '✅ Terverifikasi' : '⏳ Belum'}
+									</button>
+								</td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+									<div class="flex space-x-2">
+										<button
+											onclick={() => openEditModal(user)}
+											class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+											title="Edit"
+										>
+											<Edit size={18} />
+										</button>
+										<button
+											onclick={() => openDeleteConfirm(user)}
+											class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-200"
+											title="Hapus"
+										>
+											<Trash2 size={18} />
+										</button>
+									</div>
+								</td>
+							</tr>
+						{/each}
+						{#if filteredUsers.length === 0}
+							<tr>
+								<td colspan="6" class="px-6 py-12 text-center">
+									<div class="text-gray-400 mb-2 text-4xl">👥</div>
+									<p class="text-gray-500 text-lg">
+										{searchQuery ? 'Tidak ada pengguna yang cocok dengan pencarian' : 'Belum ada pengguna terdaftar'}
+									</p>
+								</td>
+							</tr>
+						{/if}
+					</tbody>
+				</table>
 			</div>
 		{/if}
 	</div>
 </div>
+</div>
+</div>
+
+<style>
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes slide-up {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-fade-in {
+		animation: fade-in 0.6s ease-out forwards;
+		opacity: 0;
+	}
+
+	.animate-slide-up {
+		animation: slide-up 0.5s ease-out forwards;
+		opacity: 0;
+	}
+</style>
 
 <!-- Edit User Modal -->
 {#if showEditModal}
@@ -273,7 +425,7 @@
 			<div class="p-6">
 				<h3 class="text-lg font-semibold mb-4">Edit Pengguna</h3>
 
-				<form on:submit|preventDefault={handleEdit} class="space-y-4">
+				<form onsubmit={handleEdit} class="space-y-4">
 					<div>
 						<label for="edit-name" class="block text-sm font-medium text-gray-700 mb-1">
 							Nama
@@ -317,7 +469,7 @@
 					<div class="flex justify-end space-x-3 pt-4">
 						<button
 							type="button"
-							on:click={() => { showEditModal = false; editingUser = null; }}
+							onclick={() => { showEditModal = false; editingUser = null; }}
 							class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
 						>
 							Batal
@@ -348,13 +500,13 @@
 
 				<div class="flex justify-end space-x-3">
 					<button
-						on:click={() => { showDeleteConfirm = false; deletingUser = null; }}
+						onclick={() => { showDeleteConfirm = false; deletingUser = null; }}
 						class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
 					>
 						Batal
 					</button>
 					<button
-						on:click={handleDelete}
+						onclick={handleDelete}
 						class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
 					>
 						Hapus
