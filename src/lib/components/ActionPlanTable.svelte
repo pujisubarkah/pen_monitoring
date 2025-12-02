@@ -198,7 +198,7 @@
     isEditMode = false;
     selectedItem = null;
   }
-</script><div class="overflow-x-auto text-xs">
+</script><div class="overflow-auto text-xs" style="max-height: 60vh;">
   <table class="min-w-full bg-white border border-gray-200">
     <thead class="bg-gray-50">
       <!-- Header Utama -->
