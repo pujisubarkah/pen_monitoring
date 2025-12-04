@@ -15,7 +15,7 @@
   let selectedItem: any = null;
   let modalFormData: any = {
     pilarId: '',
-    kegiatanId: '',
+    kegiatanId: [], // Change to array
     output: '',
     jadwalId: '',
     indikatorKeberhasilan: [],
@@ -44,7 +44,7 @@
   $: if (!isEditMode) {
     modalFormData = {
       pilarId: '',
-      kegiatanId: '',
+      kegiatanId: [], // Reset to empty array
       output: '',
       jadwalId: '',
       indikatorKeberhasilan: [],
@@ -75,20 +75,69 @@
     return isActive ? 'bg-green-500' : 'bg-gray-200';
   }
 
+  // Fungsi untuk mengelompokkan items berdasarkan PIC
+  function groupItemsByPic(items: any[]) {
+    const grouped: { [key: string]: any } = {};
+    items.forEach(item => {
+      // Create key from sorted PIC IDs
+      const picIds = item.actionPlanPics ? item.actionPlanPics.map((pic: any) => pic.picId).sort().join(',') : '';
+      const key = `${item.namaPilar || 'Unknown'}|${picIds}`;
+      
+      if (!grouped[key]) {
+        grouped[key] = {
+          pilar: item.namaPilar || 'Unknown',
+          pilarId: item.pilarId,
+          picIds: picIds,
+          pics: item.actionPlanPics || [],
+          kegiatans: [],
+          outputs: [],
+          indikatorKeberhasilans: [],
+          actionPlanSchedules: item.actionPlanSchedules || [],
+          ids: []
+        };
+      }
+      
+      grouped[key].kegiatans.push(item.namaKegiatan || item.kegiatan || '-');
+      grouped[key].outputs.push(item.output || '-');
+      grouped[key].indikatorKeberhasilans.push(item.indikatorKeberhasilanDetails || []);
+      grouped[key].ids.push(item.id);
+    });
+    return grouped;
+  }
+
+  $: groupedData = groupItemsByPic(items);
+
   // Handle edit action
-  async function handleEdit(item: any) {
+  async function handleEdit(group: any) {
     isEditMode = true;
-    selectedItem = item;
+    selectedItem = group;
     
     // Directly set modal form data
     modalFormData = {
-      pilarId: item.pilarId !== undefined && item.pilarId !== null ? item.pilarId : (item.kegiatan?.pilarId ? item.kegiatan.pilarId : ''),
-      kegiatanId: item.kegiatanId !== undefined && item.kegiatanId !== null ? item.kegiatanId : '',
-      output: item.output || '',
-      jadwalId: item.actionPlanSchedules && item.actionPlanSchedules.length > 0 ? item.actionPlanSchedules[0].id : '',
-      indikatorKeberhasilan: item.indikatorKeberhasilanDetails ? item.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi) : [],
-      pics: item.actionPlanPics ? item.actionPlanPics.map((pic: any) => pic.picId) : [],
-      jadwal: item.jadwal || {
+      pilarId: group.pilarId ? group.pilarId.toString() : '',
+      kegiatanId: group.ids.map((id: number) => id.toString()), // Array of ids
+      output: group.outputs.join('\n'), // Join outputs
+      jadwalId: group.actionPlanSchedules && group.actionPlanSchedules.length > 0 ? group.actionPlanSchedules[0].id : '',
+      indikatorKeberhasilan: group.indikatorKeberhasilans.flat().map((ind: any) => ind.deskripsi || ''),
+      pics: group.pics ? group.pics.map((pic: any) => pic.picId) : [],
+      jadwal: group.actionPlanSchedules && group.actionPlanSchedules.length > 0 ? {
+        pendek: {
+          okt: group.actionPlanSchedules[0].okt || false,
+          nov: group.actionPlanSchedules[0].nov || false,
+          des: group.actionPlanSchedules[0].des || false
+        },
+        menengah: {
+          tw1: group.actionPlanSchedules[0].tw1 || false,
+          tw2: group.actionPlanSchedules[0].tw2 || false,
+          tw3: group.actionPlanSchedules[0].tw3 || false,
+          tw4: group.actionPlanSchedules[0].tw4 || false
+        },
+        panjang: {
+          '2027': group.actionPlanSchedules[0].tahun2027 || false,
+          '2028': group.actionPlanSchedules[0].tahun2028 || false,
+          '2029': group.actionPlanSchedules[0].tahun2029 || false
+        }
+      } : {
         pendek: {
           okt: false,
           nov: false,
@@ -112,30 +161,33 @@
   }
 
   // Handle delete action
-  async function handleDelete(item: any) {
-    if (!confirm('Apakah Anda yakin ingin menghapus rencana aksi ini?')) {
+  async function handleDelete(group: any) {
+    if (!confirm('Apakah Anda yakin ingin menghapus semua rencana aksi dalam grup ini?')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/action-plans/${item.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
+      // Delete each item in the group
+      for (const id of group.ids) {
+        const response = await fetch(`/api/action-plans/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'Gagal menghapus rencana aksi');
         }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Call the parent's onDelete function to update the list
-        onDelete(item);
-        toastStore.success('Rencana aksi berhasil dihapus');
-      } else {
-        throw new Error(result.error || 'Gagal menghapus rencana aksi');
       }
+
+      // Call the parent's onDelete function for each id
+      group.ids.forEach((id: number) => onDelete({ id }));
+      toastStore.success('Rencana aksi berhasil dihapus');
     } catch (error) {
-      console.error('Error deleting action plan:', error);
+      console.error('Error deleting action plans:', error);
       toastStore.error('Terjadi kesalahan saat menghapus rencana aksi');
     }
   }
@@ -147,7 +199,7 @@
       
       // Prepare data for API
       const apiData = {
-        kegiatanId: parseInt(formData.kegiatanId),
+        kegiatanId: formData.kegiatanId.filter((id: string) => id !== ''), // Array of kegiatan IDs
         indikatorKeberhasilan: formData.indikatorKeberhasilan,
         output: formData.output,
         jadwalId: isEditMode ? formData.jadwalId : undefined, // Include jadwalId for updates
@@ -155,32 +207,56 @@
         jadwal: formData.jadwal
       };
 
-      const url = isEditMode ? `/api/action-plans/${selectedItem?.id}` : '/api/action-plans';
-      const method = isEditMode ? 'PUT' : 'POST';
+      if (isEditMode && formData.kegiatanId.length > 1) {
+        // Update multiple action plans
+        const updatePromises = formData.kegiatanId.map(async (id: string) => {
+          const response = await fetch(`/api/action-plans/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(apiData)
+          });
+          return response.json();
+        });
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(apiData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Call the parent's callback to update the list
-        if (isEditMode && selectedItem) {
-          onEdit({ ...selectedItem, ...result.data });
-        } else {
-          // For new items, we might need to refresh the list
-          // For now, just call onEdit with the new data
-          onEdit(result.data);
+        const results = await Promise.all(updatePromises);
+        const failed = results.filter(r => !r.success);
+        if (failed.length > 0) {
+          throw new Error(failed[0].error || 'Gagal update beberapa rencana aksi');
         }
-        
-        toastStore.success(isEditMode ? 'Rencana aksi berhasil diperbarui' : 'Rencana aksi berhasil dibuat');
+
+        // Call onEdit for each updated item
+        results.forEach(result => onEdit(result.data));
+        toastStore.success('Rencana aksi berhasil diperbarui');
       } else {
-        throw new Error(result.error || `Gagal ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
+        const url = isEditMode ? `/api/action-plans/${selectedItem?.id || formData.kegiatanId[0]}` : '/api/action-plans';
+        const method = isEditMode ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(apiData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Call the parent's callback to update the list
+          if (isEditMode && selectedItem) {
+            onEdit({ ...selectedItem, ...result.data });
+          } else {
+            // For new items, we might need to refresh the list
+            // For now, just call onEdit with the new data
+            onEdit(result.data);
+          }
+          
+          toastStore.success(isEditMode ? 'Rencana aksi berhasil diperbarui' : 'Rencana aksi berhasil dibuat');
+        } else {
+          throw new Error(result.error || `Gagal ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
+        }
       }
     } catch (error) {
       console.error(`Error ${isEditMode ? 'updating' : 'submitting'} action plan:`, error);
@@ -240,27 +316,48 @@
     </thead>
 
     <tbody class="divide-y divide-gray-200">
-      {#each items as item}
-        {@const jadwalData = item.jadwal}
+      {#each Object.values(groupedData) as group}
+        {@const jadwalData = group.actionPlanSchedules && group.actionPlanSchedules.length > 0 ? {
+          pendek: {
+            okt: group.actionPlanSchedules[0].okt || false,
+            nov: group.actionPlanSchedules[0].nov || false,
+            des: group.actionPlanSchedules[0].des || false
+          },
+          menengah: {
+            tw1: group.actionPlanSchedules[0].tw1 || false,
+            tw2: group.actionPlanSchedules[0].tw2 || false,
+            tw3: group.actionPlanSchedules[0].tw3 || false,
+            tw4: group.actionPlanSchedules[0].tw4 || false
+          },
+          panjang: {
+            '2027': group.actionPlanSchedules[0].tahun2027 || false,
+            '2028': group.actionPlanSchedules[0].tahun2028 || false,
+            '2029': group.actionPlanSchedules[0].tahun2029 || false
+          }
+        } : {}}
         {@const isFullDone = (
-          (jadwalData && jadwalData.pendek.okt && jadwalData.pendek.nov && jadwalData.pendek.des &&
-           jadwalData.menengah.tw1 && jadwalData.menengah.tw2 && jadwalData.menengah.tw3 && jadwalData.menengah.tw4 &&
-           jadwalData.panjang["2027"] && jadwalData.panjang["2028"] && jadwalData.panjang["2029"])
+          (jadwalData.pendek?.okt && jadwalData.pendek?.nov && jadwalData.pendek?.des &&
+           jadwalData.menengah?.tw1 && jadwalData.menengah?.tw2 && jadwalData.menengah?.tw3 && jadwalData.menengah?.tw4 &&
+           jadwalData.panjang?.["2027"] && jadwalData.panjang?.["2028"] && jadwalData.panjang?.["2029"])
         )}
         <tr class="hover:bg-gray-50">
           <!-- Pilar -->
           <td class="px-4 py-3 border align-top font-medium bg-gray-50 whitespace-normal">
-            {item.pilar || '-'}
+            {group.pilar}
           </td>
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
-            {item.kegiatan || '-'}
+            <ul class="list-disc list-inside">
+              {#each group.kegiatans as kegiatan}
+                <li>{kegiatan}</li>
+              {/each}
+            </ul>
           </td>
           <!-- PIC -->
           <td class="px-4 py-3 border align-top whitespace-normal">
-            {#if item.actionPlanPics && item.actionPlanPics.length > 0}
+            {#if group.pics && group.pics.length > 0}
               <div class="flex flex-wrap gap-1">
-                {#each item.actionPlanPics as pic}
+                {#each group.pics as pic}
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
                     {pic.namaInstansi || 'Unknown'}
                   </span>
@@ -272,11 +369,18 @@
           </td>
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
-            {item.output || '-'}
+            <ul class="list-disc list-inside">
+              {#each group.outputs as output}
+                <li>{output}</li>
+              {/each}
+            </ul>
           </td>
           <!-- Indikator Keberhasilan -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
-            {item.indikator || '-'}
+            {#each group.indikatorKeberhasilans as indikators, idx}
+              {#if idx > 0}<br>{/if}
+              {indikators && indikators.length > 0 ? indikators.map((ind: any) => ind.deskripsi).join(', ') : '-'}
+            {/each}
           </td>
           <!-- Jadwal Pelaksanaan -->
           {#if isFullDone}
@@ -285,37 +389,37 @@
             </td>
           {:else}
             <!-- Pendek -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.okt ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.pendek.okt ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek?.okt ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek?.okt ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.nov ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.pendek.nov ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek?.nov ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek?.nov ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek.des ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.pendek.des ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.pendek?.des ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.pendek?.des ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
             <!-- Menengah -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw1 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.menengah.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah?.tw1 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah?.tw1 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw2 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.menengah.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah?.tw2 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah?.tw2 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw3 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.menengah.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah?.tw3 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah?.tw3 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah.tw4 ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.menengah.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.menengah?.tw4 ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.menengah?.tw4 ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
             <!-- Panjang -->
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2027"] ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.panjang["2027"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang?.["2027"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang?.["2027"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2028"] ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.panjang["2028"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang?.["2028"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang?.["2028"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
-            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang["2029"] ? 'bg-green-500' : ''}">
-              <div class="w-full h-8 {jadwalData?.panjang["2029"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
+            <td class="px-2 py-2 border text-center align-middle {jadwalData?.panjang?.["2029"] ? 'bg-green-500' : ''}">
+              <div class="w-full h-8 {jadwalData?.panjang?.["2029"] ? 'bg-green-500' : 'bg-gray-200'} rounded-lg transition-all"></div>
             </td>
           {/if}
           <!-- Aksi -->
@@ -323,14 +427,14 @@
             <div class="flex justify-center space-x-2">
               <button
                 class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                on:click={() => handleEdit(item)}
+                on:click={() => handleEdit(group)}
                 title="Edit"
               >
                 <Edit size={16} />
               </button>
               <button
                 class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                on:click={() => handleDelete(item)}
+                on:click={() => handleDelete(group)}
                 title="Delete"
               >
                 <Trash2 size={16} />

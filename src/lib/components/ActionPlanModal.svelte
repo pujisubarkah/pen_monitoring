@@ -1,4 +1,21 @@
 <!-- src/lib/components/ActionPlanModal.svelte -->
+<script context="module" lang="ts">
+  export type JadwalType = {
+    pendek: { okt: boolean; nov: boolean; des: boolean };
+    menengah: { tw1: boolean; tw2: boolean; tw3: boolean; tw4: boolean };
+    panjang: { [year: string]: boolean };
+  };
+
+  export type FormDataType = {
+    pilarId: string;
+    kegiatanId: string[];
+    output: string;
+    jadwalId: string;
+    indikatorKeberhasilan: string[];
+    pics: number[];
+    jadwal: JadwalType;
+  };
+</script>
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
@@ -7,13 +24,14 @@
   export let editMode = false;
   // export const selectedItem; // Uncomment if you need external reference only
   // or simply remove the line if not needed:
-  export let formData = {
+
+  export let formData: FormDataType = {
     pilarId: '',
-    kegiatanId: '',
+    kegiatanId: [],
     output: '',
-    jadwalId: '', // Add jadwalId for editing existing schedule
-    indikatorKeberhasilan: [''], // Add indikator keberhasilan
-    pics: [], // Change back to array of IDs
+    jadwalId: '',
+    indikatorKeberhasilan: [''],
+    pics: [],
     jadwal: {
       pendek: {
         okt: false,
@@ -32,7 +50,9 @@
         '2029': false
       }
     }
-  };  const dispatch = createEventDispatcher();
+  };
+
+  const dispatch = createEventDispatcher();
 
   let instansiList: { id: number; namaInstansi: string }[] = [];
   let loadingInstansi = true;
@@ -79,12 +99,22 @@
     }
   }
 
+  function addKegiatan() {
+    formData.kegiatanId = [...formData.kegiatanId, ''];
+  }
+
+  function removeKegiatan(index: number) {
+    if (formData.kegiatanId.length > 1) {
+      formData.kegiatanId = formData.kegiatanId.filter((_, i) => i !== index);
+    }
+  }
+
   async function handleSubmit() {
     try {
       // Filter out empty indikator keberhasilan, prepare data
       const formDataToSend = {
         pilarId: formData.pilarId,
-        kegiatanId: formData.kegiatanId,
+        kegiatanId: formData.kegiatanId.filter(id => id !== ''), // Filter empty kegiatan
         indikatorKeberhasilan: formData.indikatorKeberhasilan.filter(i => i.trim() !== ''),
         output: formData.output,
         jadwalId: formData.jadwalId, // Include jadwalId for updates
@@ -110,10 +140,10 @@
   function resetForm() {
     formData = {
       pilarId: '',
-      kegiatanId: '',
-      indikatorKeberhasilan: [''], // Reset indikator keberhasilan
-      output: '',
+      kegiatanId: [], // Reset to empty array
+      output: '', // Reset to empty string
       jadwalId: '', // Reset jadwalId
+      indikatorKeberhasilan: [''], // Reset indikator keberhasilan
       pics: [], // Reset pics to empty array
       jadwal: {
         pendek: {
@@ -267,38 +297,67 @@
             {/if}
           </div>
 
-          <!-- Kegiatan -->
+          <!-- Kegiatan (Multiple) -->
           <div>
-            <label for="kegiatan" class="block text-sm font-medium text-gray-700 mb-2">Kegiatan</label>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="block text-sm font-medium text-gray-700">Kegiatan</h3>
+              <button 
+                type="button" 
+                on:click={addKegiatan}
+                class="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+              >
+                + Tambah Kegiatan
+              </button>
+            </div>
             {#if loadingKegiatan}
               <div class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 flex items-center">
                 <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
                 <span class="text-gray-500 text-sm">Memuat data kegiatan...</span>
               </div>
             {:else if kegiatanError}
-              <input
-                id="kegiatan"
-                bind:value={formData.kegiatanId}
-                class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500"
-                placeholder="Kegiatan"
-                required
-              />
+              <div class="space-y-2">
+                {#each formData.kegiatanId as _, index}
+                  <input
+                    bind:value={formData.kegiatanId[index]}
+                    class="w-full px-3 py-2 border border-red-300 rounded-md bg-red-50 focus:ring-red-500 focus:border-red-500"
+                    placeholder={`Kegiatan ${index + 1}`}
+                    required
+                  />
+                {/each}
+              </div>
               <p class="text-red-600 text-sm mt-1">{kegiatanError}</p>
             {:else}
-              <select
-                id="kegiatan"
-                bind:value={formData.kegiatanId}
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                required
-                disabled={!formData.pilarId}
-              >
-                <option value="">
-                  {formData.pilarId ? 'Pilih Kegiatan' : 'Pilih Pilar terlebih dahulu'}
-                </option>
-                {#each filteredKegiatanList as kegiatan}
-                  <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
+              <div class="space-y-2">
+                {#each formData.kegiatanId as _, index}
+                  <div class="flex gap-2">
+                    <select
+                      bind:value={formData.kegiatanId[index]}
+                      class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      required
+                      disabled={!formData.pilarId}
+                    >
+                      <option value="">
+                        {formData.pilarId ? 'Pilih Kegiatan' : 'Pilih Pilar terlebih dahulu'}
+                      </option>
+                      {#each filteredKegiatanList as kegiatan}
+                        <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
+                      {/each}
+                    </select>
+                    {#if formData.kegiatanId.length > 1}
+                      <button 
+                        type="button" 
+                        on:click={() => removeKegiatan(index)}
+                        class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+                        aria-label="Hapus Kegiatan"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    {/if}
+                  </div>
                 {/each}
-              </select>
+              </div>
             {/if}
           </div>
 
