@@ -1,8 +1,8 @@
-<!-- src/lib/components/ActionPlanTable.svelte -->
+<!-- src/lib/components/UserActionPlanTable.svelte -->
 <script lang="ts">
   import type { Instansi } from '$lib/server/schema';
   import { Edit, Trash2 } from 'lucide-svelte';
-  import ActionPlanModal from './ActionPlanModal.svelte';
+  import UserAksiModal from './UserAksiModal.svelte';
   import { toastStore } from '$lib/stores/toastStore';
 
   export let items: any[] = [];
@@ -74,19 +74,6 @@
   function getBulletColor(isActive: boolean) {
     return isActive ? 'bg-green-500' : 'bg-gray-200';
   }
-
-  // Fungsi untuk mengelompokkan items berdasarkan pilar - removed
-  // function groupItemsByPilar(items: any[]) {
-  //   const grouped: { [pilar: string]: any[] } = {};
-  //   items.forEach(item => {
-  //     const pilar = item.namaPilar || item.pilar || 'Unknown';
-  //     if (!grouped[pilar]) grouped[pilar] = [];
-  //     grouped[pilar].push(item);
-  //   });
-  //   return grouped;
-  // }
-
-  // $: groupedData = groupItemsByPilar(items);
 
   // Handle edit action
   async function handleEdit(item: any) {
@@ -228,14 +215,15 @@
     isEditMode = false;
     selectedItem = null;
   }
-</script><div class="overflow-auto text-xs" style="max-height: 60vh;">
+</script>
+
+<div class="overflow-auto text-xs" style="max-height: 60vh;">
   <table class="min-w-full bg-white border border-gray-200">
     <thead class="bg-gray-50">
       <!-- Header Utama -->
       <tr>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PILAR</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">KEGIATAN/AKSI</th>
-        <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">PIC</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">OUTPUT</th>
         <th rowspan="3" class="px-4 py-2 border text-center font-medium text-gray-700 align-middle">INDIKATOR KEBERHASILAN</th>
         <th colspan="10" class="px-4 py-2 border text-center font-medium text-gray-700 bg-blue-50">JADWAL PELAKSANAAN</th>
@@ -302,20 +290,6 @@
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             {item.namaKegiatan || item.kegiatan || '-'}
-          </td>
-          <!-- PIC -->
-          <td class="px-4 py-3 border align-top whitespace-normal">
-            {#if item.actionPlanPics && item.actionPlanPics.length > 0}
-              <div class="flex flex-wrap gap-1">
-                {#each item.actionPlanPics as pic}
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    {pic.namaInstansi || 'Unknown'}
-                  </span>
-                {/each}
-              </div>
-            {:else}
-              -
-            {/if}
           </td>
           <!-- Output -->
           <td class="px-4 py-3 border align-top whitespace-normal text-gray-700">
@@ -389,7 +363,7 @@
       
       {#if items.length === 0}
         <tr>
-          <td colspan="16" class="px-6 py-8 text-center text-gray-500 border">
+          <td colspan="15" class="px-6 py-8 text-center text-gray-500 border">
             Belum ada data rencana aksi
           </td>
         </tr>
@@ -399,10 +373,10 @@
 </div>
 
 <!-- Edit Modal -->
-<ActionPlanModal
-  bind:isOpen={isModalOpen}
-  editMode={isEditMode}
-  bind:formData={modalFormData}
+<UserAksiModal
+  isOpen={isModalOpen}
+  isEdit={isEditMode}
+  formData={modalFormData}
   on:submit={handleModalSubmit}
   on:close={handleModalClose}
 />

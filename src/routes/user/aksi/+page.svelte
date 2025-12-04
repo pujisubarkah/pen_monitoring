@@ -1,113 +1,81 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import ActionPlanTable from '$lib/components/ActionPlanTable.svelte';
-	import AksiModal from '$lib/components/AksiModal.svelte';
+	import UserActionPlanTable from '$lib/components/UserActionPlanTable.svelte';
+	import UserAksiModal from '$lib/components/UserAksiModal.svelte';
+	import { onMount } from 'svelte';
 
-	// Types
-	type ActionPlanProgress = {
-		id: number;
-		actionPlanPicId: number;
-		periode: string;
-		capaian: number;
-		createdAt: string;
-	};
-
-	type ActionPlanSchedule = {
-		id: number;
-		actionPlansId: number;
-		okt: boolean;
-		nov: boolean;
-		des: boolean;
-		tw1: boolean;
-		tw2: boolean;
-		tw3: boolean;
-		tw4: boolean;
-		tahun2027: boolean;
-		tahun2028: boolean;
-		tahun2029: boolean;
-		createdAt: string;
-	};
-
-	type ActionPlanPic = {
-		id: number;
-		actionPlansId: number;
-		picId: number;
-		namaInstansi: string;
-	};
-
-	type IndikatorKeberhasilanDetail = {
-		id: number;
-		actionPlansId: number;
-		urutan: number | null;
-		deskripsi: string;
-	};
-
-	type ActionPlan = {
-		id: number;
-		kegiatanId: number;
-		namaKegiatan: string;
-		pilarId: number;
-		namaPilar: string;
-		output: string;
-		status: string;
-		createdAt: string;
-		updatedAt: string;
-		actionPlanProgresses: ActionPlanProgress[];
-		actionPlanSchedules: ActionPlanSchedule[];
-		actionPlanPics: ActionPlanPic[];
-		indikatorKeberhasilanDetails: IndikatorKeberhasilanDetail[];
-	};
+	// Types - simplified since we use data directly from API
+	// type ActionPlan = { ... } // Removed as we use API data directly
 
 	// Receive data
-	export let data: PageData & { plans?: { success: boolean; data: ActionPlan[]; pagination: any } };
+	export let data: PageData & { plans?: { success: boolean; data: any[]; pagination: any } };
 
-	// Map data ke tabel
-	$: actionPlans = (data.plans?.data ?? []).map((plan: ActionPlan) => {
-		const schedule = plan.actionPlanSchedules[0] || {};
-		const indikators = plan.indikatorKeberhasilanDetails
-			.map((i) => i.deskripsi)
-			.join('; ');
+	// Map data ke tabel - langsung gunakan data dari API tanpa mapping ulang
+	$: actionPlans = data.plans?.data ?? [];
 
-		return {
-			id: plan.id,
-			pilar: plan.namaPilar,
-			kegiatan: plan.namaKegiatan,
-			output: plan.output,
-			indikator: indikators,
-			status: plan.status,
-			jadwal: {
-				pendek: {
-					okt: schedule.okt || false,
-					nov: schedule.nov || false,
-					des: schedule.des || false
-				},
-				menengah: {
-					tw1: schedule.tw1 || false,
-					tw2: schedule.tw2 || false,
-					tw3: schedule.tw3 || false,
-					tw4: schedule.tw4 || false
-				},
-				panjang: {
-					jan: false,
-					feb: false,
-					mar: false,
-					apr: false,
-					may: false,
-					jun: false,
-					jul: false,
-					aug: false,
-					sep: false,
-					oct: false,
-					nov: false,
-					dec: false,
-					"2027": schedule.tahun2027 || false,
-					"2028": schedule.tahun2028 || false,
-					"2029": schedule.tahun2029 || false
-				}
-			},
-			progresses: plan.actionPlanProgresses
-		};
+	// Get instansi_id from localStorage
+	let instansiId: string | null = null;
+
+	onMount(() => {
+		// Get user data from localStorage
+		const userData = localStorage.getItem("user");
+		if (!userData) {
+			console.error("User data tidak ditemukan di localStorage");
+			return;
+		}
+
+		try {
+			const user = JSON.parse(userData);
+			instansiId = user.instansi_id?.toString();
+
+			if (!instansiId) {
+				console.error("Instansi ID tidak ditemukan dalam data user");
+				return;
+			}
+
+			// Fetch action plans using instansi_id from localStorage
+			fetchActionPlans(instansiId);
+		} catch (error) {
+			console.error("Error parsing user data:", error);
+		}
 	});
+
+	// Fetch action plans from API
+	async function fetchActionPlans(instansiId: string) {
+		try {
+			const response = await fetch(`/api/action-plans/instansi/${instansiId}`);
+			const result = await response.json();
+
+			if (result.success) {
+				actionPlans = result.data;
+			} else {
+				console.error("Failed to fetch action plans:", result.error);
+			}
+		} catch (error) {
+			console.error("Error fetching action plans:", error);
+		}
+	}
+
+	// Handle edit action
+	function handleEdit(updatedItem: any) {
+		// Update the item in the list
+		actionPlans = actionPlans.map((item: any) => 
+			item.id === updatedItem.id ? updatedItem : item
+		);
+	}
+
+	// Handle delete action
+	function handleDelete(deletedItem: any) {
+		// Remove the item from the list
+		actionPlans = actionPlans.filter((item: any) => item.id !== deletedItem.id);
+	}
+
+	// Refresh data after edit/delete operations
+	function handleDataChange() {
+		if (instansiId) {
+			fetchActionPlans(instansiId);
+		}
+	}
 
 	// Modal form
 	let isModalOpen = false;
@@ -147,9 +115,9 @@
 		<h1 class="text-2xl font-bold">Rencana Aksi PEN 2025</h1>
 	</div>
 
-	<ActionPlanTable items={actionPlans} />
+	<UserActionPlanTable items={actionPlans} onEdit={handleDataChange} onDelete={handleDataChange} />
 
-	<AksiModal
+	<UserAksiModal
 		isOpen={isModalOpen}
 		on:close={() => (isModalOpen = false)}
 		formData={newFormData}

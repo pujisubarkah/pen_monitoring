@@ -17,8 +17,11 @@ export const load: PageLoad = async ({ fetch, data }) => {
 		}
 	}
 
+	// Get instansi_id from user data (this will be used as fallback)
 	const instansi_id = userData?.instansi_id;
 
+	// Note: The actual instansi_id will be fetched from localStorage on the client side
+	// For now, we'll try to use the server-side data if available
 	if (!instansi_id) {
 		return {
 			user: userData,
