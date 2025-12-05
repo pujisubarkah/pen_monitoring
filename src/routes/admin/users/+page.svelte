@@ -95,9 +95,15 @@
 		role: 'user'
 	});
 
-	// Delete confirmation state
+	// Delete modal state
 	let showDeleteConfirm = $state(false);
 	let deletingUser = $state<User | null>(null);
+
+	// Profile modal state
+	let showProfileModal = $state(false);
+	let selectedUser = $state<User | null>(null);
+	let userProfile = $state<any>(null);
+	let profileLoading = $state(false);
 
 	async function fetchUsers() {
 		try {
@@ -203,6 +209,29 @@
 	function openDeleteConfirm(user: User) {
 		deletingUser = user;
 		showDeleteConfirm = true;
+	}
+
+	async function showUserProfile(user: User) {
+		selectedUser = user;
+		showProfileModal = true;
+		profileLoading = true;
+
+		try {
+			// Fetch user profile data
+			const response = await fetch(`/api/profile/by-user-id/${user.id}`);
+			const data = await response.json();
+
+			if (data.success) {
+				userProfile = data.data;
+			} else {
+				userProfile = null;
+			}
+		} catch (error) {
+			console.error('Error fetching user profile:', error);
+			userProfile = null;
+		} finally {
+			profileLoading = false;
+		}
 	}
 
 	async function handleDelete() {
@@ -322,7 +351,12 @@
 											{user.name.charAt(0).toUpperCase()}
 										</div>
 										<div>
-											<div class="text-sm font-medium text-gray-900">{user.name}</div>
+											<button
+												onclick={() => showUserProfile(user)}
+												class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors duration-200 text-left"
+											>
+												{user.name}
+											</button>
 											<div class="text-sm text-gray-500">ID: {user.id}</div>
 										</div>
 									</div>
@@ -511,6 +545,152 @@
 					>
 						Hapus
 					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- User Profile Modal -->
+{#if showProfileModal && selectedUser}
+	<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+		<div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden animate-fade-in">
+			<!-- Modal Header -->
+			<div class="bg-linear-to-r from-blue-600 to-purple-600 px-6 py-4 text-white">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-4">
+						<div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-xl">
+							{selectedUser.name.charAt(0).toUpperCase()}
+						</div>
+						<div>
+							<h2 class="text-xl font-bold">{selectedUser.name}</h2>
+							<p class="text-blue-100">ID: {selectedUser.id}</p>
+						</div>
+					</div>
+					<button
+						onclick={() => { showProfileModal = false; selectedUser = null; userProfile = null; }}
+						class="text-white/70 hover:text-white transition-colors duration-200"
+					>
+						✕
+					</button>
+				</div>
+			</div>
+
+			<!-- Modal Body -->
+			<div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+				{#if profileLoading}
+					<div class="text-center py-8">
+						<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+						<p class="text-gray-600">Memuat profil...</p>
+					</div>
+				{:else}
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<!-- User Info -->
+						<div class="space-y-4">
+							<h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Informasi Akun</h3>
+
+							<div class="space-y-3">
+								<div>
+									<div class="block text-sm font-medium text-gray-600">Nama Lengkap</div>
+									<p class="text-gray-900">{selectedUser.name}</p>
+								</div>
+
+								<div>
+									<div class="block text-sm font-medium text-gray-600">Email</div>
+									<p class="text-gray-900">{selectedUser.email}</p>
+								</div>
+
+								<div>
+									<div class="block text-sm font-medium text-gray-600">Role</div>
+									<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize
+										{selectedUser.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+										{selectedUser.role}
+									</span>
+								</div>
+
+								<div>
+									<div class="block text-sm font-medium text-gray-600">Status Verifikasi</div>
+									<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+										{selectedUser.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}">
+										{selectedUser.is_verified ? '✅ Terverifikasi' : '⏳ Belum Verifikasi'}
+									</span>
+								</div>
+
+								<div>
+									<div class="block text-sm font-medium text-gray-600">Status Akun</div>
+									<span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full
+										{selectedUser.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+										{selectedUser.is_active ? 'Aktif' : 'Tidak Aktif'}
+									</span>
+								</div>
+
+								<div>
+									<span class="block text-sm font-medium text-gray-600">Bergabung Sejak</span>
+									<p class="text-gray-900">{new Date(selectedUser.created_at).toLocaleDateString('id-ID')}</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- Profile Info -->
+						<div class="space-y-4">
+							<h3 class="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Informasi Profil</h3>
+
+							{#if userProfile}
+								<div class="space-y-3">
+									<div>
+										<div class="block text-sm font-medium text-gray-600">Nama Lengkap</div>
+										<p class="text-gray-900">{userProfile.nama || '-'}</p>
+									</div>
+
+									<div>
+										<div class="block text-sm font-medium text-gray-600">Jabatan</div>
+										<p class="text-gray-900">{userProfile.jabatan || '-'}</p>
+									</div>
+
+									<div>
+										<div class="block text-sm font-medium text-gray-600">Unit Kerja</div>
+										<p class="text-gray-900">{userProfile.unit_kerja || '-'}</p>
+									</div>
+
+									<div>
+										<div class="block text-sm font-medium text-gray-600">No. HP</div>
+										<p class="text-gray-900">{userProfile.no_hp || '-'}</p>
+									</div>
+
+									<div>
+										<div class="block text-sm font-medium text-gray-600">Alamat Kantor</div>
+										<p class="text-gray-900">{userProfile.alamat_kantor || '-'}</p>
+									</div>
+								</div>
+							{:else}
+								<div class="text-center py-8 text-gray-500">
+									<div class="text-4xl mb-2">📝</div>
+									<p>Profil belum diisi</p>
+									<p class="text-sm mt-1">User belum melengkapi informasi profilnya</p>
+								</div>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
+
+			<!-- Modal Footer -->
+			<div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+				<div class="flex justify-end gap-3">
+					<button
+						onclick={() => { showProfileModal = false; selectedUser = null; userProfile = null; }}
+						class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+					>
+						Tutup
+					</button>
+					{#if selectedUser}
+						<button
+							onclick={() => { if (selectedUser) openEditModal(selectedUser); showProfileModal = false; }}
+							class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+						>
+							Edit User
+						</button>
+					{/if}
 				</div>
 			</div>
 		</div>

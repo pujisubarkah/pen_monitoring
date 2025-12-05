@@ -5,19 +5,19 @@
   import { goto } from '$app/navigation';
   import { User, Mail, Phone, Briefcase, Building2, MapPin } from 'lucide-svelte';
 
-  let profileId: number | null = null; // Store existing profile ID for updates
-  let success: boolean = false;
-  let error: string = '';
-  let loading: boolean = false;
-  let showModal: boolean = false;
-  let formData = {
+  let profileId = $state<number | null>(null); // Store existing profile ID for updates
+  let success = $state(false);
+  let error = $state('');
+  let loading = $state(false);
+  let showModal = $state(false);
+  let formData = $state({
     nama: '',
     email: '',
     no_hp: '',
     jabatan: '',
     unit_kerja: '',
     alamat_kantor: ''
-  };
+  });
 
   // TODO: fetch user profile from API if available
   onMount(async () => {
@@ -53,6 +53,11 @@
       }
     }
   });
+
+  async function handleFormSubmit(event: Event) {
+    event.preventDefault();
+    await handleSubmit();
+  }
 
   async function handleSubmit() {
     loading = true;
@@ -100,12 +105,11 @@
     }
   }
 </script>
-
 <div class="max-w-2xl mx-auto p-8 bg-blue-50 rounded-2xl shadow-lg border border-blue-200 mt-8">
   <h1 class="text-3xl font-extrabold mb-10 flex items-center gap-3 text-blue-800">
     <User class="w-8 h-8 text-blue-800" /> Profil Saya
   </h1>
-  <form on:submit|preventDefault={handleSubmit} class="space-y-6">
+  <form onsubmit={handleFormSubmit} class="space-y-6">
     <div class="flex items-center gap-6">
       <label for="nama" class="flex items-center gap-2 w-56 text-blue-800 font-semibold">
         <User class="w-5 h-5" /> Nama
@@ -156,14 +160,14 @@
   {#if showModal}
     <div class="fixed inset-0 bg-white bg-opacity-60 flex items-center justify-center z-50" style="backdrop-filter: blur(1px);">
       <div class="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-pop-up">
-        <button class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold" aria-label="Tutup" on:click={() => showModal = false}>&times;</button>
+        <button class="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl font-bold" aria-label="Tutup" onclick={() => showModal = false}>&times;</button>
         <h2 class="text-xl font-bold mb-4 text-blue-800">Profil berhasil disimpan!</h2>
         <p class="mb-6">Apakah Anda ingin lanjut mengisi aksi sekarang?</p>
         <div class="flex justify-center gap-4">
-          <button class="bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-900 shadow" on:click={() => goto('/user/aksi')}>
+          <button class="bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-900 shadow" onclick={() => goto('/user/aksi')}>
             Lanjut Isi Aksi
           </button>
-          <button class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 shadow" on:click={() => showModal = false}>
+          <button class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 shadow" onclick={() => showModal = false}>
             Nanti Saja
           </button>
         </div>

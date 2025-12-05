@@ -12,7 +12,8 @@
     { name: 'Dashboard', path: '/user' },
     { name: 'Profile', path: '/user/profile' },
     { name: 'Input Aksi', path: '/user/aksi' },
-    { name: 'Progress', path: '/user/progress' }
+    { name: 'Progress', path: '/user/progress' },
+    { name: 'Progress Pen', path: '/user/progress_pen' }
   ];
 
   // choose menu based on slug

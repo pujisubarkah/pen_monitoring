@@ -1,219 +1,14 @@
 <!-- src/lib/components/UserActionPlanTable.svelte -->
 <script lang="ts">
   import type { Instansi } from '$lib/server/schema';
-  import { Edit, Trash2 } from 'lucide-svelte';
-  import UserAksiModal from './UserAksiModal.svelte';
-  import { toastStore } from '$lib/stores/toastStore';
+  import { goto } from '$app/navigation';
+  import { TrendingUp } from 'lucide-svelte';
 
   export let items: any[] = [];
-  export let onEdit: (item: any) => void = () => {};
-  export let onDelete: (item: any) => void = () => {};
-
-  // Modal state
-  let isModalOpen = false;
-  let isEditMode = false;
-  let selectedItem: any = null;
-  let modalFormData: any = {
-    pilarId: '',
-    kegiatanId: [], // Change to array
-    output: '',
-    jadwalId: '',
-    indikatorKeberhasilan: [],
-    pics: [],
-    jadwal: {
-      pendek: {
-        okt: false,
-        nov: false,
-        des: false
-      },
-      menengah: {
-        tw1: false,
-        tw2: false,
-        tw3: false,
-        tw4: false
-      },
-      panjang: {
-        '2027': false,
-        '2028': false,
-        '2029': false
-      }
-    }
-  };
-
-  // Initialize modal form data reactively (only for non-edit mode)
-  $: if (!isEditMode) {
-    modalFormData = {
-      pilarId: '',
-      kegiatanId: [], // Reset to empty array
-      output: '',
-      jadwalId: '',
-      indikatorKeberhasilan: [],
-      pics: [],
-      jadwal: {
-        pendek: {
-          okt: false,
-          nov: false,
-          des: false
-        },
-        menengah: {
-          tw1: false,
-          tw2: false,
-          tw3: false,
-          tw4: false
-        },
-        panjang: {
-          '2027': false,
-          '2028': false,
-          '2029': false
-        }
-      }
-    };
-  }
 
   // Helper untuk menentukan warna bullet
   function getBulletColor(isActive: boolean) {
     return isActive ? 'bg-green-500' : 'bg-gray-200';
-  }
-
-  // Handle edit action
-  async function handleEdit(item: any) {
-    isEditMode = true;
-    selectedItem = item;
-    
-    // Directly set modal form data
-    modalFormData = {
-      pilarId: item.pilarId ? item.pilarId.toString() : '',
-      kegiatanId: [item.kegiatanId ? item.kegiatanId.toString() : ''], // As array
-      output: item.output || '',
-      jadwalId: item.actionPlanSchedules && item.actionPlanSchedules.length > 0 ? item.actionPlanSchedules[0].id : '',
-      indikatorKeberhasilan: item.indikatorKeberhasilanDetails ? item.indikatorKeberhasilanDetails.map((ind: any) => ind.deskripsi) : [],
-      pics: item.actionPlanPics ? item.actionPlanPics.map((pic: any) => pic.picId) : [],
-      jadwal: item.actionPlanSchedules && item.actionPlanSchedules.length > 0 ? {
-        pendek: {
-          okt: item.actionPlanSchedules[0].okt || false,
-          nov: item.actionPlanSchedules[0].nov || false,
-          des: item.actionPlanSchedules[0].des || false
-        },
-        menengah: {
-          tw1: item.actionPlanSchedules[0].tw1 || false,
-          tw2: item.actionPlanSchedules[0].tw2 || false,
-          tw3: item.actionPlanSchedules[0].tw3 || false,
-          tw4: item.actionPlanSchedules[0].tw4 || false
-        },
-        panjang: {
-          '2027': item.actionPlanSchedules[0].tahun2027 || false,
-          '2028': item.actionPlanSchedules[0].tahun2028 || false,
-          '2029': item.actionPlanSchedules[0].tahun2029 || false
-        }
-      } : {
-        pendek: {
-          okt: false,
-          nov: false,
-          des: false
-        },
-        menengah: {
-          tw1: false,
-          tw2: false,
-          tw3: false,
-          tw4: false
-        },
-        panjang: {
-          '2027': false,
-          '2028': false,
-          '2029': false
-        }
-      }
-    };
-    
-    isModalOpen = true;
-  }
-
-  // Handle delete action
-  async function handleDelete(item: any) {
-    if (!confirm('Apakah Anda yakin ingin menghapus rencana aksi ini?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/action-plans/${item.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Call the parent's onDelete function to update the list
-        onDelete(item);
-        toastStore.success('Rencana aksi berhasil dihapus');
-      } else {
-        throw new Error(result.error || 'Gagal menghapus rencana aksi');
-      }
-    } catch (error) {
-      console.error('Error deleting action plan:', error);
-      toastStore.error('Terjadi kesalahan saat menghapus rencana aksi');
-    }
-  }
-
-  // Handle modal submit
-  async function handleModalSubmit(event: any) {
-    try {
-      const formData = event.detail;
-      
-      // Prepare data for API
-      const apiData = {
-        kegiatanId: formData.kegiatanId.filter((id: string) => id !== ''), // Array of kegiatan IDs
-        indikatorKeberhasilan: formData.indikatorKeberhasilan,
-        output: formData.output,
-        jadwalId: isEditMode ? formData.jadwalId : undefined, // Include jadwalId for updates
-        pics: formData.pics, // Include selected PICs
-        jadwal: formData.jadwal
-      };
-
-      const url = isEditMode ? `/api/action-plans/${selectedItem?.id}` : '/api/action-plans';
-      const method = isEditMode ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(apiData)
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Call the parent's callback to update the list
-        if (isEditMode && selectedItem) {
-          onEdit({ ...selectedItem, ...result.data });
-        } else {
-          // For new items, we might need to refresh the list
-          // For now, just call onEdit with the new data
-          onEdit(result.data);
-        }
-        
-        toastStore.success(isEditMode ? 'Rencana aksi berhasil diperbarui' : 'Rencana aksi berhasil dibuat');
-      } else {
-        throw new Error(result.error || `Gagal ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
-      }
-    } catch (error) {
-      console.error(`Error ${isEditMode ? 'updating' : 'submitting'} action plan:`, error);
-      toastStore.error(`Terjadi kesalahan saat ${isEditMode ? 'mengupdate' : 'menyimpan'} rencana aksi`);
-    }
-    
-    isModalOpen = false;
-    isEditMode = false;
-    selectedItem = null;
-  }
-
-  // Handle modal close
-  function handleModalClose() {
-    isModalOpen = false;
-    isEditMode = false;
-    selectedItem = null;
   }
 </script>
 
@@ -341,20 +136,13 @@
           {/if}
           <!-- Aksi -->
           <td class="px-4 py-3 border align-top text-center">
-            <div class="flex justify-center space-x-2">
+            <div class="flex justify-center">
               <button
-                class="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                on:click={() => handleEdit(item)}
-                title="Edit"
+                class="inline-flex items-center justify-center w-8 h-8 bg-green-100 text-green-600 hover:bg-green-200 rounded-md transition-colors border border-green-200"
+                on:click={() => goto(`/user/progress?actionPlanId=${item.id}`)}
+                title="Lihat Progress"
               >
-                <Edit size={16} />
-              </button>
-              <button
-                class="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                on:click={() => handleDelete(item)}
-                title="Delete"
-              >
-                <Trash2 size={16} />
+                <TrendingUp size={16} />
               </button>
             </div>
           </td>
@@ -371,15 +159,6 @@
     </tbody>
   </table>
 </div>
-
-<!-- Edit Modal -->
-<UserAksiModal
-  isOpen={isModalOpen}
-  isEdit={isEditMode}
-  formData={modalFormData}
-  on:submit={handleModalSubmit}
-  on:close={handleModalClose}
-/>
 
 <style>
   table {

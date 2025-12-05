@@ -21,6 +21,10 @@ export const GET: RequestHandler = async () => {
 						});
 						const data = await response.json();
 						if (response.ok) {
+							// Simpan user data ke localStorage
+							if (data.user) {
+								localStorage.setItem('user', JSON.stringify(data.user));
+							}
 							alert('Login successful! Redirecting...');
 							window.location.href = '/user/aksi';
 						} else {
@@ -40,6 +44,10 @@ export const GET: RequestHandler = async () => {
 						});
 						const data = await response.json();
 						if (response.ok) {
+							// Simpan user data ke localStorage
+							if (data.user) {
+								localStorage.setItem('user', JSON.stringify(data.user));
+							}
 							alert('Login successful! Redirecting...');
 							window.location.href = '/user/aksi';
 						} else {

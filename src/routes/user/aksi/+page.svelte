@@ -56,27 +56,6 @@
 		}
 	}
 
-	// Handle edit action
-	function handleEdit(updatedItem: any) {
-		// Update the item in the list
-		actionPlans = actionPlans.map((item: any) => 
-			item.id === updatedItem.id ? updatedItem : item
-		);
-	}
-
-	// Handle delete action
-	function handleDelete(deletedItem: any) {
-		// Remove the item from the list
-		actionPlans = actionPlans.filter((item: any) => item.id !== deletedItem.id);
-	}
-
-	// Refresh data after edit/delete operations
-	function handleDataChange() {
-		if (instansiId) {
-			fetchActionPlans(instansiId);
-		}
-	}
-
 	// Modal form
 	let isModalOpen = false;
 
@@ -115,7 +94,7 @@
 		<h1 class="text-2xl font-bold">Rencana Aksi PEN 2025</h1>
 	</div>
 
-	<UserActionPlanTable items={actionPlans} onEdit={handleDataChange} onDelete={handleDataChange} />
+	<UserActionPlanTable items={actionPlans} />
 
 	<UserAksiModal
 		isOpen={isModalOpen}

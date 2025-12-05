@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import AksiModal from '$lib/components/AksiModal.svelte';
 	import { onMount } from 'svelte';
+	import { page } from '$app/stores';
 	import { Edit, Trash2 } from 'lucide-svelte';
 
 	// =====================================
@@ -42,33 +43,36 @@
 	};
 
 	// =====================================
-	// GET instansi_id dari localStorage
+	// GET actionPlanId dari URL parameter
 	// =====================================
+	let actionPlanId: string | null = null;
 	let instansiId: string | null = null;
-
+	
 	onMount(() => {
-		// Get user data from localStorage
+		// Get actionPlanId from URL query parameter
+		const urlParams = new URLSearchParams($page.url.search);
+		actionPlanId = urlParams.get('actionPlanId');
+
+		// Get instansiId from localStorage (as before)
 		const userData = localStorage.getItem("user");
-		if (!userData) {
-			console.error("User data tidak ditemukan di localStorage");
-			return;
+		if (userData) {
+			try {
+				const user = JSON.parse(userData);
+				instansiId = user.instansi_id?.toString();
+			} catch (error) {
+				console.error("Error parsing user data:", error);
+			}
 		}
 
-		try {
-			const user = JSON.parse(userData);
-			instansiId = user.instansi_id?.toString();
-
-			if (!instansiId) {
-				console.error("Instansi ID tidak ditemukan dalam data user");
-				return;
-			}
-
+		if (actionPlanId && instansiId) {
 			fetchProgress(instansiId);
-		} catch (error) {
-			console.error("Error parsing user data:", error);
+		} else {
+			console.error("Action Plan ID atau Instansi ID tidak ditemukan");
 		}
 	});
 
+	// =====================================
+	// Fetch Data dari API
 	// =====================================
 	// Fetch Data dari API
 	// =====================================
@@ -82,7 +86,15 @@
 				return;
 			}
 
-			progressData = json.data.map((item: any) => ({
+			// Filter data berdasarkan actionPlanId jika ada
+			let filteredData = json.data;
+			if (actionPlanId) {
+				filteredData = json.data.filter((item: any) => 
+					item.actionPlanPic?.actionPlansId?.toString() === actionPlanId
+				);
+			}
+
+			progressData = filteredData.map((item: any) => ({
 				id: item.id,
 				pilar: item.pilar?.nama_pilar || '-',
 				kegiatan: item.kegiatan?.namaKegiatan || '-',

@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { actionPlanProgress, actionPlanPic, actionPlans, kegiatan, pilar, instansi } from '$lib/server/schema';
+import { actionPlanProgress, actionPlanPic, actionPlans, kegiatan, pilar, instansi, users, userProfile } from '$lib/server/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { insertActionPlanProgressSchema } from '$lib/server/schemas/action-plan-schemas';
 
@@ -9,6 +9,7 @@ export async function GET({ url }) {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '10');
     const actionPlanPicId = url.searchParams.get('action_plan_pic_id');
+    const instansiId = url.searchParams.get('instansi_id');
 
     const offset = (page - 1) * limit;
 
@@ -16,6 +17,10 @@ export async function GET({ url }) {
 
     if (actionPlanPicId) {
       whereConditions.push(eq(actionPlanProgress.actionPlanPicId, parseInt(actionPlanPicId)));
+    }
+
+    if (instansiId) {
+      whereConditions.push(eq(actionPlanPic.picId, parseInt(instansiId)));
     }
 
     // Get action plan progress with related data
@@ -53,6 +58,19 @@ export async function GET({ url }) {
           id: instansi.id,
           namaInstansi: instansi.namaInstansi,
         },
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+        userProfile: {
+          id: userProfile.id,
+          nama: userProfile.nama,
+          jabatan: userProfile.jabatan,
+          unit_kerja: userProfile.unit_kerja,
+          no_hp: userProfile.no_hp,
+          alamat_kantor: userProfile.alamat_kantor,
+        },
       })
       .from(actionPlanProgress)
       .leftJoin(actionPlanPic, eq(actionPlanProgress.actionPlanPicId, actionPlanPic.id))
@@ -60,6 +78,8 @@ export async function GET({ url }) {
       .leftJoin(kegiatan, eq(actionPlans.kegiatanId, kegiatan.id))
       .leftJoin(pilar, eq(kegiatan.pilarId, pilar.id))
       .leftJoin(instansi, eq(actionPlanPic.picId, instansi.id))
+      .leftJoin(users, eq(actionPlanPic.picId, users.id))
+      .leftJoin(userProfile, eq(users.id, userProfile.user_id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(desc(actionPlanProgress.createdAt))
       .limit(limit)
@@ -68,6 +88,7 @@ export async function GET({ url }) {
     const totalResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(actionPlanProgress)
+      .leftJoin(actionPlanPic, eq(actionPlanProgress.actionPlanPicId, actionPlanPic.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
     const total = totalResult[0]?.count || 0;
