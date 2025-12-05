@@ -7,6 +7,7 @@
 		id: string;
 		no: number;
 		aksi: string;
+		pic: string;
 		indikator: string;
 		tanggalUpdate: string;
 		persentase: number;
@@ -21,7 +22,7 @@
 			loading = true;
 			error = '';
 
-			const response = await fetch('/api/action-plans?limit=1000');
+			const response = await fetch('/api/action-plans?limit=all');
 			const result = await response.json();
 
 			if (result.success) {
@@ -56,10 +57,14 @@
 					const indikator = plan.indikatorKeberhasilanDetails?.[0]?.deskripsi || 
 						'Indikator belum ditentukan';
 
+					// Get PIC names from actionPlanPics
+					const picNames = plan.actionPlanPics?.map((pic: any) => pic.namaInstansi).filter(Boolean).join(', ') || 'Belum ditentukan';
+
 					return {
 						id: plan.id.toString(),
 						no: index + 1,
 						aksi: plan.namaKegiatan || 'Nama kegiatan tidak tersedia',
+						pic: picNames,
 						indikator: indikator,
 						tanggalUpdate: latestUpdate,
 						persentase: averageProgress
@@ -87,6 +92,7 @@
 			id: '1',
 			no: 1,
 			aksi: 'Implementasi Sistem Monitoring Terintegrasi',
+			pic: 'Kemenkominfo, Kemendagri',
 			indikator: 'Sistem monitoring dapat menampilkan data real-time dari semua provinsi',
 			tanggalUpdate: '2024-11-01',
 			persentase: 85
@@ -95,6 +101,7 @@
 			id: '2',
 			no: 2,
 			aksi: 'Pelatihan Staff IT di 34 Provinsi',
+			pic: 'Kemenkominfo, Bappenas',
 			indikator: 'Minimal 80% staff IT di setiap provinsi telah mengikuti pelatihan',
 			tanggalUpdate: '2024-10-28',
 			persentase: 92
@@ -103,6 +110,7 @@
 			id: '3',
 			no: 3,
 			aksi: 'Upgrade Infrastruktur Jaringan Nasional',
+			pic: 'Kemenkominfo',
 			indikator: 'Kapasitas bandwidth meningkat 200% dari baseline',
 			tanggalUpdate: '2024-10-25',
 			persentase: 78
@@ -111,6 +119,7 @@
 			id: '4',
 			no: 4,
 			aksi: 'Audit Keamanan Sistem di Seluruh Indonesia',
+			pic: 'Kemenkominfo, BSSN',
 			indikator: '100% sistem lolos audit keamanan dengan skor minimal 85%',
 			tanggalUpdate: '2024-10-20',
 			persentase: 45
@@ -119,6 +128,7 @@
 			id: '5',
 			no: 5,
 			aksi: 'Implementasi Backup Otomatis Terpusat',
+			pic: 'Kemenkominfo',
 			indikator: 'Sistem backup otomatis aktif di 100% lokasi',
 			tanggalUpdate: '2024-10-15',
 			persentase: 67
@@ -127,6 +137,7 @@
 			id: '6',
 			no: 6,
 			aksi: 'Digitalisasi Dokumen dan Arsip',
+			pic: 'Kemenkominfo, Kemendagri',
 			indikator: '95% dokumen penting telah didigitalisasi',
 			tanggalUpdate: '2024-10-10',
 			persentase: 89
@@ -135,6 +146,7 @@
 			id: '7',
 			no: 7,
 			aksi: 'Pengembangan Dashboard Monitoring Real-time',
+			pic: 'Kemenkominfo',
 			indikator: 'Dashboard dapat diakses oleh semua stakeholder dengan update real-time',
 			tanggalUpdate: '2024-10-05',
 			persentase: 73
@@ -143,6 +155,7 @@
 			id: '8',
 			no: 8,
 			aksi: 'Koordinasi Lintas Sektor dengan K/L',
+			pic: 'Bappenas, Kemenkominfo',
 			indikator: 'Minimal 15 K/L terintegrasi dalam sistem monitoring',
 			tanggalUpdate: '2024-09-30',
 			persentase: 56

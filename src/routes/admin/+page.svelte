@@ -2,6 +2,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
+	import { goto } from '$app/navigation';
 	import StatCard from '$lib/components/cards/StatCard.svelte';
 	import ProgressChart from '$lib/components/charts/ProgressChart.svelte';
 
@@ -80,6 +81,23 @@
 		updateAdminFromLocalStorage();
 		window.addEventListener('storage', updateAdminFromLocalStorage);
 	});
+
+	// Quick action handlers
+	function goToLaporan() {
+		goto('/admin/laporan');
+	}
+
+	function goToRencanaAksi() {
+		goto('/admin/rencana_aksi');
+	}
+
+	function goToUsers() {
+		goto('/admin/users');
+	}
+
+	function goToPetaKinerja() {
+		goto('/admin/peta_kinerja');
+	}
 </script>
 
 
@@ -128,16 +146,16 @@
 			<div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.5s">
 				<h2 class="text-xl font-semibold text-gray-900 mb-4">Aksi Cepat</h2>
 				<div class="space-y-3">
-					<button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+					<button onclick={goToLaporan} class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
 						📊 Lihat Laporan
 					</button>
-					<button class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+					<button onclick={goToRencanaAksi} class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
 						➕ Tambah Rencana Aksi
 					</button>
-					<button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+					<button onclick={goToUsers} class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
 						👥 Kelola Pengguna
 					</button>
-					<button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
+					<button onclick={goToPetaKinerja} class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
 						📍 Lihat Peta Kinerja
 					</button>
 				</div>
