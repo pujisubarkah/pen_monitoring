@@ -13,7 +13,7 @@
 	let stats = $state([
 		{
 			title: 'Total Pengguna',
-			value: 1250,
+			value: 0, // Will be updated from API
 			subtitle: 'Pengguna terdaftar',
 			icon: '👥',
 			trend: 'up' as const,
@@ -22,7 +22,7 @@
 		},
 		{
 			title: 'Rencana Aksi',
-			value: 89,
+			value: 0, // Will be updated from API
 			subtitle: 'Aksi aktif',
 			icon: '📋',
 			trend: 'up' as const,
@@ -31,7 +31,7 @@
 		},
 		{
 			title: 'Progress Rata-rata',
-			value: '78%',
+			value: '0%', // Will be updated from API
 			subtitle: 'Pencapaian target',
 			icon: '📈',
 			trend: 'up' as const,
@@ -40,7 +40,7 @@
 		},
 		{
 			title: 'Instansi Terlibat',
-			value: 45,
+			value: 0, // Will be updated from API
 			subtitle: 'Instansi aktif',
 			icon: '🏢',
 			trend: 'neutral' as const,
@@ -77,9 +77,53 @@
 		}
 	}
 
+	async function loadDashboardStats() {
+		try {
+			// Load users count
+			const usersResponse = await fetch('/api/users');
+			const usersResult = await usersResponse.json();
+			if (usersResult.success) {
+				stats[0].value = usersResult.data.length;
+			}
+
+			// Load action plans count and calculate average progress
+			const actionPlansResponse = await fetch('/api/action-plans?limit=all');
+			const actionPlansResult = await actionPlansResponse.json();
+			if (actionPlansResult.success) {
+				stats[1].value = actionPlansResult.data.length;
+
+				// Calculate average progress
+				let totalProgress = 0;
+				let progressCount = 0;
+
+				actionPlansResult.data.forEach((plan: any) => {
+					if (plan.actionPlanProgresses && plan.actionPlanProgresses.length > 0) {
+						plan.actionPlanProgresses.forEach((progress: any) => {
+							totalProgress += progress.capaian || 0;
+							progressCount++;
+						});
+					}
+				});
+
+				const averageProgress = progressCount > 0 ? Math.round(totalProgress / progressCount) : 0;
+				stats[2].value = `${averageProgress}%`;
+			}
+
+			// Load instansi count
+			const instansiResponse = await fetch('/api/instansi');
+			const instansiResult = await instansiResponse.json();
+			if (instansiResult.success) {
+				stats[3].value = instansiResult.data.length;
+			}
+		} catch (error) {
+			console.error('Failed to load dashboard stats:', error);
+		}
+	}
+
 	onMount(() => {
 		updateAdminFromLocalStorage();
 		window.addEventListener('storage', updateAdminFromLocalStorage);
+		loadDashboardStats();
 	});
 
 	// Quick action handlers
