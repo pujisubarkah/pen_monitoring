@@ -3,43 +3,41 @@
 	import { writable } from 'svelte/store';
 	import { Edit, Trash2 } from 'lucide-svelte';
 
-	interface Instansi {
+	interface Pilar {
 		id: number;
-		instansiId: number;
-		namaInstansi: string;
+		nama_pilar: string;
 	}
 
-	let instansiList = writable<Instansi[]>([]);
+	let pilarList = writable<Pilar[]>([]);
 	let loading = writable(false);
 	let error = writable('');
 	let showModal = writable(false);
 	let modalMode = writable<'add' | 'edit'>('add');
 
-	let currentInstansi = writable<Instansi | null>(null);
+	let currentPilar = writable<Pilar | null>(null);
 
 	// Form data
 	let formData = writable({
-		instansiId: '',
-		namaInstansi: ''
+		nama_pilar: ''
 	});
 
-	// Load instansi data
-	async function loadInstansi() {
+	// Load pilar data
+	async function loadPilar() {
 		loading.set(true);
 		error.set('');
 
 		try {
-			const response = await fetch('/api/instansi');
+			const response = await fetch('/api/pilar');
 			const result = await response.json();
 
 			if (result.success) {
-				instansiList.set(result.data);
+				pilarList.set(result.data);
 			} else {
-				error.set(result.message || 'Gagal memuat data instansi');
+				error.set(result.message || 'Gagal memuat data pilar');
 			}
 		} catch (err) {
 			error.set('Terjadi kesalahan saat memuat data');
-			console.error('Error loading instansi:', err);
+			console.error('Error loading pilar:', err);
 		} finally {
 			loading.set(false);
 		}
@@ -49,19 +47,17 @@
 	function openAddModal() {
 		modalMode.set('add');
 		formData.set({
-			instansiId: '',
-			namaInstansi: ''
+			nama_pilar: ''
 		});
 		showModal.set(true);
 	}
 
 	// Open edit modal
-	function openEditModal(instansi: Instansi) {
+	function openEditModal(pilar: Pilar) {
 		modalMode.set('edit');
-		currentInstansi.set(instansi);
+		currentPilar.set(pilar);
 		formData.set({
-			instansiId: instansi.instansiId.toString(),
-			namaInstansi: instansi.namaInstansi
+			nama_pilar: pilar.nama_pilar
 		});
 		showModal.set(true);
 	}
@@ -69,41 +65,39 @@
 	// Close modal
 	function closeModal() {
 		showModal.set(false);
-		currentInstansi.set(null);
+		currentPilar.set(null);
 		formData.set({
-			instansiId: '',
-			namaInstansi: ''
+			nama_pilar: ''
 		});
 	}
 
-	// Save instansi (add or edit)
-	async function saveInstansi() {
+	// Save pilar (add or edit)
+	async function savePilar() {
 		const data = $formData;
 		const mode = $modalMode;
 
-		if (!data.instansiId.trim() || !data.namaInstansi.trim()) {
-			alert('Semua field harus diisi');
+		if (!data.nama_pilar.trim()) {
+			alert('Nama pilar harus diisi');
 			return;
 		}
 
 		const payload = {
-			instansiId: parseInt(data.instansiId),
-			namaInstansi: data.namaInstansi.trim()
+			nama_pilar: data.nama_pilar.trim()
 		};
 
 		try {
 			let response;
 			if (mode === 'add') {
-				response = await fetch('/api/instansi', {
+				response = await fetch('/api/pilar', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(payload)
 				});
 			} else {
-				const instansi = $currentInstansi;
-				if (!instansi) return;
+				const pilar = $currentPilar;
+				if (!pilar) return;
 
-				response = await fetch(`/api/instansi/${instansi.id}`, {
+				response = await fetch(`/api/pilar/${pilar.id}`, {
 					method: 'PUT',
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify(payload)
@@ -114,49 +108,49 @@
 
 			if (result.success) {
 				closeModal();
-				loadInstansi();
-				alert(mode === 'add' ? 'Instansi berhasil ditambahkan' : 'Instansi berhasil diupdate');
+				loadPilar();
+				alert(mode === 'add' ? 'Pilar berhasil ditambahkan' : 'Pilar berhasil diupdate');
 			} else {
 				alert(result.message || 'Terjadi kesalahan');
 			}
 		} catch (err) {
-			console.error('Error saving instansi:', err);
+			console.error('Error saving pilar:', err);
 			alert('Terjadi kesalahan saat menyimpan data');
 		}
 	}
 
-	// Delete instansi
-	async function deleteInstansi(instansi: Instansi) {
-		if (!confirm(`Apakah Anda yakin ingin menghapus instansi "${instansi.namaInstansi}"?`)) {
+	// Delete pilar
+	async function deletePilar(pilar: Pilar) {
+		if (!confirm(`Apakah Anda yakin ingin menghapus pilar "${pilar.nama_pilar}"?`)) {
 			return;
 		}
 
 		try {
-			const response = await fetch(`/api/instansi/${instansi.id}`, {
+			const response = await fetch(`/api/pilar/${pilar.id}`, {
 				method: 'DELETE'
 			});
 
 			const result = await response.json();
 
 			if (result.success) {
-				loadInstansi();
-				alert('Instansi berhasil dihapus');
+				loadPilar();
+				alert('Pilar berhasil dihapus');
 			} else {
 				alert(result.message || 'Terjadi kesalahan');
 			}
 		} catch (err) {
-			console.error('Error deleting instansi:', err);
+			console.error('Error deleting pilar:', err);
 			alert('Terjadi kesalahan saat menghapus data');
 		}
 	}
 
 	onMount(() => {
-		loadInstansi();
+		loadPilar();
 	});
 </script>
 
 <svelte:head>
-	<title>Master Instansi - Admin Panel</title>
+	<title>Master Pilar - Admin Panel</title>
 </svelte:head>
 
 <div class="container mx-auto px-4 py-8">
@@ -164,15 +158,15 @@
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-8">
 			<div>
-				<h1 class="text-3xl font-bold text-gray-900 mb-2">Master Instansi</h1>
-				<p class="text-gray-600">Kelola data master instansi dalam sistem PEN monitoring</p>
+				<h1 class="text-3xl font-bold text-gray-900 mb-2">Master Pilar</h1>
+				<p class="text-gray-600">Kelola data master pilar dalam sistem PEN monitoring</p>
 			</div>
 			<button
 				on:click={openAddModal}
 				class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2"
 			>
 				<span>+</span>
-				<span>Tambah Instansi</span>
+				<span>Tambah Pilar</span>
 			</button>
 		</div>
 
@@ -185,7 +179,7 @@
 						<h3 class="text-red-800 font-semibold">Terjadi Kesalahan</h3>
 						<p class="text-red-600">{$error}</p>
 						<button
-							on:click={loadInstansi}
+							on:click={loadPilar}
 							class="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
 						>
 							Coba Lagi
@@ -199,10 +193,10 @@
 		{#if $loading}
 			<div class="flex items-center justify-center py-12">
 				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-				<span class="ml-3 text-gray-600">Memuat data instansi...</span>
+				<span class="ml-3 text-gray-600">Memuat data pilar...</span>
 			</div>
 		{:else}
-			<!-- Instansi Table -->
+			<!-- Pilar Table -->
 			<div class="bg-white rounded-lg shadow-md overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
@@ -212,7 +206,7 @@
 									ID
 								</th>
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Nama Instansi
+									Nama Pilar
 								</th>
 								<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
 									Aksi
@@ -220,27 +214,27 @@
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">
-							{#each $instansiList as instansi}
+							{#each $pilarList as pilar}
 								<tr class="hover:bg-gray-50">
 									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-										{instansi.instansiId}
+										{pilar.id}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{instansi.namaInstansi}
+										{pilar.nama_pilar}
 									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 										<div class="flex justify-end gap-2">
 											<button
-												on:click={() => openEditModal(instansi)}
+												on:click={() => openEditModal(pilar)}
 												class="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
-												title="Edit Instansi"
+												title="Edit Pilar"
 											>
 												<Edit size={16} />
 											</button>
 											<button
-												on:click={() => deleteInstansi(instansi)}
+												on:click={() => deletePilar(pilar)}
 												class="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
-												title="Hapus Instansi"
+												title="Hapus Pilar"
 											>
 												<Trash2 size={16} />
 											</button>
@@ -253,16 +247,16 @@
 				</div>
 
 				<!-- Empty State -->
-				{#if $instansiList.length === 0}
+				{#if $pilarList.length === 0}
 					<div class="text-center py-12">
-						<div class="text-gray-400 text-6xl mb-4">🏢</div>
-						<h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada data instansi</h3>
-						<p class="text-gray-500 mb-4">Tambahkan instansi pertama untuk memulai</p>
+						<div class="text-gray-400 text-6xl mb-4">🏗️</div>
+						<h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada data pilar</h3>
+						<p class="text-gray-500 mb-4">Tambahkan pilar pertama untuk memulai</p>
 						<button
 							on:click={openAddModal}
 							class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
 						>
-							Tambah Instansi Pertama
+							Tambah Pilar Pertama
 						</button>
 					</div>
 				{/if}
@@ -293,34 +287,20 @@
 		>
 			<div class="mt-3">
 				<h3 id="modal-title" class="text-lg font-medium text-gray-900 mb-4">
-					{$modalMode === 'add' ? 'Tambah Instansi' : 'Edit Instansi'}
+					{$modalMode === 'add' ? 'Tambah Pilar' : 'Edit Pilar'}
 				</h3>
 
-				<form on:submit|preventDefault={saveInstansi} class="space-y-4">
+				<form on:submit|preventDefault={savePilar} class="space-y-4">
 					<div>
-						<label for="instansiId" class="block text-sm font-medium text-gray-700 mb-1">
-							ID Instansi
+						<label for="nama_pilar" class="block text-sm font-medium text-gray-700 mb-1">
+							Nama Pilar
 						</label>
 						<input
-							id="instansiId"
-							type="number"
-							bind:value={$formData.instansiId}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="Masukkan ID instansi"
-							required
-						/>
-					</div>
-
-					<div>
-						<label for="namaInstansi" class="block text-sm font-medium text-gray-700 mb-1">
-							Nama Instansi
-						</label>
-						<input
-							id="namaInstansi"
+							id="nama_pilar"
 							type="text"
-							bind:value={$formData.namaInstansi}
+							bind:value={$formData.nama_pilar}
 							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-							placeholder="Masukkan nama instansi"
+							placeholder="Masukkan nama pilar"
 							required
 						/>
 					</div>

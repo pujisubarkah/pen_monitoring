@@ -9,6 +9,7 @@
 		{ name: 'Dashboard', path: `/admin`, icon: '📊' },
 		{ name: 'Manajemen User', path: `/admin/users`, icon: '👥' },
 		{ name: 'Master Instansi', path: `/admin/master_instansi`, icon: '🏢' },
+		{ name: 'Master Pilar', path: `/admin/master_pilar`, icon: '🏗️' },
 		{ name: 'Rencana Aksi', path: `/admin/rencana_aksi`, icon: '📋' },
 		{ name: 'Peta Kinerja', path: `/admin/peta_kinerja`, icon: '🗺️' },
 		{ name: 'Laporan', path: `/admin/laporan`, icon: '📄' }
