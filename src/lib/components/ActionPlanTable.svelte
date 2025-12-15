@@ -9,6 +9,34 @@
   export let onEdit: (item: any) => void = () => {};
   export let onDelete: (item: any) => void = () => {};
 
+  // Helper function to calculate rowspan for pilar column
+  function calculatePilarRowspan(items: any[], currentIndex: number): number {
+    const currentPilar = items[currentIndex].namaPilar || items[currentIndex].pilar;
+    let rowspan = 1;
+    
+    // Count consecutive items with same pilar
+    for (let i = currentIndex + 1; i < items.length; i++) {
+      const nextPilar = items[i].namaPilar || items[i].pilar;
+      if (nextPilar === currentPilar) {
+        rowspan++;
+      } else {
+        break;
+      }
+    }
+    
+    return rowspan;
+  }
+
+  // Helper function to check if pilar cell should be rendered
+  function shouldRenderPilarCell(items: any[], currentIndex: number): boolean {
+    if (currentIndex === 0) return true;
+    
+    const currentPilar = items[currentIndex].namaPilar || items[currentIndex].pilar;
+    const prevPilar = items[currentIndex - 1].namaPilar || items[currentIndex - 1].pilar;
+    
+    return currentPilar !== prevPilar;
+  }
+
   // Modal state
   let isModalOpen = false;
   let isEditMode = false;
@@ -270,7 +298,7 @@
     </thead>
 
     <tbody class="divide-y divide-gray-200">
-      {#each items as item}
+      {#each items as item, index}
         {@const jadwalData = item.actionPlanSchedules && item.actionPlanSchedules.length > 0 ? {
           pendek: {
             okt: item.actionPlanSchedules[0].okt || false,
@@ -296,9 +324,14 @@
         )}
         <tr class="hover:bg-gray-50">
           <!-- Pilar -->
-          <td class="px-4 py-3 border align-top font-medium bg-gray-50 whitespace-normal">
-            {item.namaPilar || item.pilar || '-'}
-          </td>
+          {#if shouldRenderPilarCell(items, index)}
+            <td 
+              rowspan={calculatePilarRowspan(items, index)}
+              class="px-4 py-3 border align-top font-medium bg-gray-50 whitespace-normal"
+            >
+              {item.namaPilar || item.pilar || '-'}
+            </td>
+          {/if}
           <!-- Kegiatan/Aksi -->
           <td class="px-4 py-3 border align-top whitespace-normal">
             {item.namaKegiatan || item.kegiatan || '-'}
