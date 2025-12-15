@@ -194,7 +194,9 @@
       pilarError = '';
       const response = await fetch('/api/pilar');
       const result = await response.json();
-      if (Array.isArray(result)) {
+      if (result.success && Array.isArray(result.data)) {
+        pilarList = result.data;
+      } else if (Array.isArray(result)) {
         pilarList = result;
       } else {
         throw new Error('Format data pilar tidak valid');
@@ -212,6 +214,13 @@
     fetchKegiatan();
     fetchPilar();
   });
+
+  // Debug: Log formData changes
+  $: if (editMode && isOpen) {
+    console.log('Edit mode formData:', formData);
+    console.log('pilarList:', pilarList);
+    console.log('kegiatanList:', kegiatanList);
+  }
 
   $: filteredKegiatanList = (function () {
     if (!formData.pilarId) return kegiatanList;
@@ -291,7 +300,7 @@
               >
                 <option value="">Pilih Pilar</option>
                 {#each pilarList as pilar}
-                  <option value={pilar.id}>{pilar.nama_pilar}</option>
+                  <option value={pilar.id.toString()}>{pilar.nama_pilar}</option>
                 {/each}
               </select>
             {/if}
@@ -340,7 +349,7 @@
                         {formData.pilarId ? 'Pilih Kegiatan' : 'Pilih Pilar terlebih dahulu'}
                       </option>
                       {#each filteredKegiatanList as kegiatan}
-                        <option value={kegiatan.id}>{kegiatan.nama_kegiatan}</option>
+                        <option value={kegiatan.id.toString()}>{kegiatan.nama_kegiatan}</option>
                       {/each}
                     </select>
                     {#if formData.kegiatanId.length > 1}
