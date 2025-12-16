@@ -373,7 +373,7 @@
 					<table class="min-w-full divide-y divide-gray-200">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PIC</th>
+
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pilar</th>
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kegiatan</th>
 								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
@@ -385,25 +385,6 @@
 						<tbody class="bg-white divide-y divide-gray-200">
 							{#each progressData as item}
 								<tr class="hover:bg-gray-50">
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{#if item.userProfile?.nama}
-											<button
-												on:click={() => showUserProfile(item)}
-												class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-											>
-												{item.userProfile.nama}
-											</button>
-										{:else if item.user?.name}
-											<button
-												on:click={() => showUserProfile(item)}
-												class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-											>
-												{item.user.name}
-											</button>
-										{:else}
-											<span class="text-gray-500">-</span>
-										{/if}
-									</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.pilar}</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.kegiatan}</td>
 									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.target_value}</td>
