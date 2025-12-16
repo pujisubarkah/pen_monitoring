@@ -13,12 +13,8 @@ export async function GET({ params, url }) {
       );
     }
 
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
     const search = url.searchParams.get('search') || '';
     const status = url.searchParams.get('status') || '';
-
-    const offset = (page - 1) * limit;
 
     let whereConditions = [
       eq(actionPlanPic.picId, instansiId) // Filter by instansi_id
@@ -74,9 +70,7 @@ export async function GET({ params, url }) {
       .leftJoin(instansi, eq(actionPlanPic.picId, instansi.id))
       .leftJoin(indikatorKeberhasilanDetail, eq(actionPlans.id, indikatorKeberhasilanDetail.actionPlansId))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(actionPlans.id)
-      .limit(limit)
-      .offset(offset);
+      .orderBy(actionPlans.id);
 
     // Group the related data
     type GroupedActionPlan = {
@@ -144,23 +138,9 @@ export async function GET({ params, url }) {
     // Convert to array
     const result = Object.values(groupedData);
 
-    const totalResult = await db
-      .select({ count: actionPlans.id })
-      .from(actionPlans)
-      .leftJoin(actionPlanPic, eq(actionPlans.id, actionPlanPic.actionPlansId))
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
-
-    const total = totalResult[0]?.count || 0;
-
     return json({
       success: true,
-      data: result,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      data: result
     });
   } catch (error) {
     console.error('Error fetching action plans by instansi:', error);
