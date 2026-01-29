@@ -87,14 +87,25 @@
 						<img src="https://merahputih.kop.id/images/logo.png" alt="Logo KDMP" class="logo" />
 					</a>
 
-					<!-- Login Form -->
-					<div class="login-form-wrapper">
-						<LoginForm {form} />
-					</div>
+				<!-- Login Form -->
+				<div class="login-form-wrapper">
+					<LoginForm {form} />
 				</div>
 
-				<!-- Footer -->
-				<div class="aside-footer">
+				<!-- Manual Book Button -->
+				<div class="manual-book-wrapper">
+					<a href="/assets/Manual_Book_Sistem_PEN.pdf" target="_blank" class="manual-book-btn">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+						</svg>
+						<span>Buku Panduan</span>
+					</a>
+				</div>
+			</div>
+
+			<!-- Footer -->
+			<div class="aside-footer">
 					<div class="footer-text">
 						@2025 Lembaga Administrasi Negara
 					</div>
@@ -206,6 +217,36 @@
 
 	.login-form-wrapper {
 		width: 100%;
+	}
+
+	.manual-book-wrapper {
+		margin-top: 1.5rem;
+		text-align: center;
+	}
+
+	.manual-book-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.75rem 1.5rem;
+		background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+		color: white;
+		text-decoration: none;
+		border-radius: 8px;
+		font-size: 0.9rem;
+		font-weight: 600;
+		transition: all 0.3s ease;
+		box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+	}
+
+	.manual-book-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3);
+		background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+	}
+
+	.manual-book-btn svg {
+		flex-shrink: 0;
 	}
 
 	.aside-footer {
