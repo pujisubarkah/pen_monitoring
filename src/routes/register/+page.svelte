@@ -1,6 +1,13 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import type { PageData, ActionData } from './$types';
+	import type { PageData } from './$types';
+	
+	// Extend ActionData to include optional error property
+	interface ActionData {
+		error?: string;
+		[key: string]: unknown;
+	}
+	import { toastStore } from '$lib/stores/toastStore';
 
 	interface Props {
 		form?: ActionData & {
@@ -71,6 +78,27 @@
 									loading = true;
 									return async ({ result, update }) => {
 										loading = false;
+										// Only access data if result.type is 'success' or 'failure'
+										let form: ActionData | undefined = undefined;
+										if (result.type === 'success' || result.type === 'failure') {
+											form = result.data as ActionData;
+										}
+										// Show toast if registration is successful (no error in form)
+										if (result.type === 'success' && !(form?.error)) {
+											toastStore.add({
+												message: 'Anda telah berhasil registrasi, admin akan melakukan verifikasi',
+												type: 'success',
+												duration: 6000
+											});
+											// Reset form jika ingin
+											formData = {
+												name: '',
+												email: '',
+												instansiId: '',
+												password: '',
+												confirmPassword: ''
+											};
+										}
 										update();
 									};
 								}}

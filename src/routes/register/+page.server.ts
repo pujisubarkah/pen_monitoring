@@ -125,12 +125,11 @@ export const actions: Actions = {
 
 			console.log('Registration successful, redirecting to dashboard');
 
-			// Redirect ke dashboard sesuai role
-			if (newUser.role === 'admin') {
-				throw redirect(302, '/admin');
-			} else {
-				throw redirect(302, '/user');
-			}
+			// Return sukses tanpa redirect, agar frontend bisa menampilkan pesan sukses
+			return {
+				success: true,
+				message: 'Registrasi berhasil, admin akan melakukan verifikasi.'
+			};
 
 		} catch (error) {
 			console.error('Registration error:', error);

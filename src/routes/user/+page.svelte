@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { goto } from '$app/navigation';
+	import Toast from '$lib/components/Toast.svelte';
+	import { toastStore } from '$lib/stores/toastStore';
 
 	// Store for user info (should match Sidebar.svelte)
 	export const userInfo = writable({ userName: '', userInstansi: '' });
@@ -42,6 +44,15 @@
 					hasProfile = false;
 				}
 			}
+			// Cek flag sessionStorage untuk toast sukses registrasi
+			if (sessionStorage.getItem('justRegistered')) {
+				toastStore.add({
+					message: 'Anda telah berhasil registrasi, admin akan melakukan verifikasi',
+					type: 'success',
+					duration: 6000
+				});
+				sessionStorage.removeItem('justRegistered');
+			}
 		}
 	});
 
@@ -54,6 +65,7 @@
 	<title>User Dashboard - PEN Monitor</title>
 </svelte:head>
 
+<Toast />
 <main class="flex flex-col items-center justify-center min-h-[60vh] p-8">
 	<div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full text-center">
 		<h1 class="text-2xl font-bold text-blue-700 mb-2">Selamat Datang, {$userInfo.userName || 'User'}!</h1>
