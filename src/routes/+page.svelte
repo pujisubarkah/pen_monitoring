@@ -94,7 +94,7 @@
 
 				<!-- Manual Book Button -->
 				<div class="manual-book-wrapper">
-					<a href="/assets/Manual_Book_Sistem_PEN.pdf" target="_blank" class="manual-book-btn">
+					<a href="/assets/manual-book" target="_blank" class="manual-book-btn">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 							<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
 							<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
