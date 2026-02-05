@@ -1,9 +1,10 @@
-import { pgTable, text, serial } from 'drizzle-orm/pg-core';
+import { text, serial } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { penMonitoringSchema } from './base-schema';
 
 // Pilar table
-export const pilar = pgTable('koperasi_pilar', {
+export const pilar = penMonitoringSchema.table('koperasi_pilar', {
   id: serial('id').primaryKey(),
   nama_pilar: text('nama_pilar').notNull(),
 });

@@ -1,10 +1,11 @@
-import { pgTable, integer, varchar, timestamp, index } from 'drizzle-orm/pg-core';
+import { integer, varchar, timestamp, index } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { pilar } from './pilar-schemas';
+import { penMonitoringSchema } from './base-schema';
 
 // Kegiatan table
-export const kegiatan = pgTable('kegiatan', {
+export const kegiatan = penMonitoringSchema.table('kegiatan', {
   id: integer('id').primaryKey(),
   pilarId: integer('pilar_id').notNull().references(() => pilar.id, { onDelete: 'cascade' }),
   namaKegiatan: varchar('nama_kegiatan', { length: 500 }).notNull(),

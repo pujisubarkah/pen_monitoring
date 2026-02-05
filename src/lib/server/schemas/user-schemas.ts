@@ -1,9 +1,10 @@
-import { pgTable, text, timestamp, integer, serial, varchar, index, boolean, uuid } from 'drizzle-orm/pg-core';
+import { text, timestamp, integer, serial, varchar, index, boolean, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
+import { penMonitoringSchema } from './base-schema';
 
 // User Profile table
-export const userProfile = pgTable('user_profiles', {
+export const userProfile = penMonitoringSchema.table('user_profiles', {
   id: serial('id').primaryKey(),
   user_id: integer('user_id').notNull(),
   nama: varchar('nama', { length: 255 }),
@@ -17,7 +18,7 @@ export const userProfile = pgTable('user_profiles', {
 });
 
 // Users table
-export const users = pgTable('users', {
+export const users = penMonitoringSchema.table('users', {
 	id: serial('id').primaryKey(),
 	name: text('name').notNull(),
 	email: text('email').notNull().unique(),
@@ -31,7 +32,7 @@ export const users = pgTable('users', {
 });
 
 // Sessions table
-export const sessions = pgTable('sessions', {
+export const sessions = penMonitoringSchema.table('sessions', {
 	id: text('id').primaryKey(),
 	userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
 	expiresAt: timestamp('expires_at').notNull(),

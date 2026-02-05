@@ -1,10 +1,11 @@
-import { pgTable, text, timestamp, uuid, integer } from 'drizzle-orm/pg-core';
+import { text, timestamp, uuid, integer } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { users } from './user-schemas';
+import { penMonitoringSchema } from './base-schema';
 
 // Actions table
-export const actions = pgTable('actions', {
+export const actions = penMonitoringSchema.table('actions', {
 	id: uuid('id').primaryKey().defaultRandom(),
 	title: text('title').notNull(),
 	description: text('description'),

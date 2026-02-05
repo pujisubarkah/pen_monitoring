@@ -1,52 +1,12 @@
-// Tabel indikator_keberhasilan_detail sesuai permintaan user
-export const indikatorKeberhasilanDetail = pgTable('indikator_keberhasilan_detail', {
-  id: serial('id').primaryKey(),
-  actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
-  urutan: integer('urutan').notNull(),
-  deskripsi: text('deskripsi').notNull(),
-}, (table) => {
-  return {
-    actionPlansIdIdx: index('indikator_keberhasilan_detail_action_plans_id_idx').on(table.actionPlansId),
-    urutanIdx: index('indikator_keberhasilan_detail_urutan_idx').on(table.urutan),
-  };
-});
-
-// Zod schemas for indikatorKeberhasilanDetail
-export const insertIndikatorKeberhasilanDetailSchema = createInsertSchema(indikatorKeberhasilanDetail, {
-  actionPlansId: z.number().int().min(1, 'Action plan wajib diisi'),
-  urutan: z.number().int().min(1, 'Urutan wajib diisi'),
-  deskripsi: z.string().min(1, 'Deskripsi wajib diisi'),
-});
-export const selectIndikatorKeberhasilanDetailSchema = createSelectSchema(indikatorKeberhasilanDetail);
-
-// Types
-export type IndikatorKeberhasilanDetail = typeof indikatorKeberhasilanDetail.$inferSelect;
-export type NewIndikatorKeberhasilanDetail = typeof indikatorKeberhasilanDetail.$inferInsert;
-// Tabel action_plan_pic sesuai permintaan user
-export const actionPlanPic = pgTable('action_plan_pic', {
-  id: serial('id').primaryKey(),
-  actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
-  picId: integer('pic_id').notNull().references(() => instansi.id, { onDelete: 'cascade' }),
-});
-
-// Zod schemas for actionPlanPic
-export const insertActionPlanPicSchema = createInsertSchema(actionPlanPic, {
-  actionPlansId: z.number().int().min(1, 'Action plan wajib diisi'),
-  picId: z.number().int().min(1, 'PIC wajib diisi'),
-});
-export const selectActionPlanPicSchema = createSelectSchema(actionPlanPic);
-
-// Types
-export type ActionPlanPic = typeof actionPlanPic.$inferSelect;
-export type NewActionPlanPic = typeof actionPlanPic.$inferInsert;
-import { pgTable, text, timestamp, integer, varchar, index, numeric, serial, boolean } from 'drizzle-orm/pg-core';
+import { text, timestamp, integer, varchar, index, numeric, serial, boolean } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { kegiatan } from './kegiatan-schemas';
 import { instansi } from './instansi-schemas';
+import { penMonitoringSchema } from './base-schema';
 
 // Tabel Utama Action Plans (update sesuai permintaan user)
-export const actionPlans = pgTable('action_plans', {
+export const actionPlans = penMonitoringSchema.table('action_plans', {
   id: serial('id').primaryKey(),
   kegiatanId: integer('kegiatan_id').notNull(),
   output: text('output'),
@@ -60,8 +20,28 @@ export const actionPlans = pgTable('action_plans', {
   };
 });
 
+// Tabel action_plan_pic sesuai permintaan user
+export const actionPlanPic = penMonitoringSchema.table('action_plan_pic', {
+  id: serial('id').primaryKey(),
+  actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  picId: integer('pic_id').notNull().references(() => instansi.id, { onDelete: 'cascade' }),
+});
+
+// Tabel indikator_keberhasilan_detail sesuai permintaan user
+export const indikatorKeberhasilanDetail = penMonitoringSchema.table('indikator_keberhasilan_detail', {
+  id: serial('id').primaryKey(),
+  actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
+  urutan: integer('urutan').notNull(),
+  deskripsi: text('deskripsi').notNull(),
+}, (table) => {
+  return {
+    actionPlansIdIdx: index('indikator_keberhasilan_detail_action_plans_id_idx').on(table.actionPlansId),
+    urutanIdx: index('indikator_keberhasilan_detail_urutan_idx').on(table.urutan),
+  };
+});
+
 // Tabel Action Plan Progress (menggantikan rencanaPic)
-export const actionPlanProgress = pgTable('action_plan_progress', {
+export const actionPlanProgress = penMonitoringSchema.table('action_plan_progress', {
   id: integer('id').primaryKey(),
   actionPlanPicId: integer('action_plan_pic_id').notNull().references(() => actionPlanPic.id, { onDelete: 'cascade' }),
   target: integer('target'),
@@ -76,7 +56,7 @@ export const actionPlanProgress = pgTable('action_plan_progress', {
 });
 
 // Tabel Target
-export const target = pgTable('target', {
+export const target = penMonitoringSchema.table('target', {
   id: serial('id').primaryKey(),
   actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
   tahun: integer('tahun').notNull(),
@@ -92,7 +72,7 @@ export const target = pgTable('target', {
 });
 
 // Tabel Action Plan Schedule
-export const actionPlanSchedule = pgTable('action_plan_schedule', {
+export const actionPlanSchedule = penMonitoringSchema.table('action_plan_schedule', {
   id: serial('id').primaryKey(),
   actionPlansId: integer('action_plans_id').notNull().references(() => actionPlans.id, { onDelete: 'cascade' }),
 
@@ -118,6 +98,21 @@ export const actionPlanSchedule = pgTable('action_plan_schedule', {
     actionPlansIdIdx: index('action_plan_schedule_action_plans_id_idx').on(table.actionPlansId),
   };
 });
+
+// Zod schemas for indikatorKeberhasilanDetail
+export const insertIndikatorKeberhasilanDetailSchema = createInsertSchema(indikatorKeberhasilanDetail, {
+  actionPlansId: z.number().int().min(1, 'Action plan wajib diisi'),
+  urutan: z.number().int().min(1, 'Urutan wajib diisi'),
+  deskripsi: z.string().min(1, 'Deskripsi wajib diisi'),
+});
+export const selectIndikatorKeberhasilanDetailSchema = createSelectSchema(indikatorKeberhasilanDetail);
+
+// Zod schemas for actionPlanPic
+export const insertActionPlanPicSchema = createInsertSchema(actionPlanPic, {
+  actionPlansId: z.number().int().min(1, 'Action plan wajib diisi'),
+  picId: z.number().int().min(1, 'PIC wajib diisi'),
+});
+export const selectActionPlanPicSchema = createSelectSchema(actionPlanPic);
 
 // Zod schemas for action plans
 export const insertActionPlanSchema = createInsertSchema(actionPlans, {
@@ -154,6 +149,10 @@ export const insertActionPlanScheduleSchema = createInsertSchema(actionPlanSched
 export const selectActionPlanScheduleSchema = createSelectSchema(actionPlanSchedule);
 
 // Types
+export type IndikatorKeberhasilanDetail = typeof indikatorKeberhasilanDetail.$inferSelect;
+export type NewIndikatorKeberhasilanDetail = typeof indikatorKeberhasilanDetail.$inferInsert;
+export type ActionPlanPic = typeof actionPlanPic.$inferSelect;
+export type NewActionPlanPic = typeof actionPlanPic.$inferInsert;
 export type ActionPlan = typeof actionPlans.$inferSelect;
 export type NewActionPlan = typeof actionPlans.$inferInsert;
 export type ActionPlanProgress = typeof actionPlanProgress.$inferSelect;
