@@ -3,6 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users, instansi } from '$lib/server/schema';
 import { findUserByEmail, findUserById, hashPassword } from '$lib/server/auth';
+import { sendEmail } from '$lib/email';
 import { eq } from 'drizzle-orm';
 
 // GET /api/users/[id] - get user by id
@@ -81,6 +82,9 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       throw error(404, { message: 'Pengguna tidak ditemukan' });
     }
 
+    // Track verification status before update
+    const wasVerified = !!existingUser.is_verified;
+
     // Prepare update data
     const updateData: any = {
       updatedAt: new Date(),
@@ -107,8 +111,10 @@ export const PUT: RequestHandler = async ({ request, params }) => {
     }
 
     // Update is_verified if provided
+    let willBeVerified = wasVerified;
     if (typeof body.is_verified === 'boolean') {
       updateData.is_verified = body.is_verified;
+      willBeVerified = body.is_verified;
     }
 
     // Update password if provided
@@ -157,6 +163,20 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       is_verified: updatedUser.is_verified,
     };
 
+    // If user just got verified, send email
+    if (!wasVerified && willBeVerified) {
+      // Send verification email
+      await sendEmail({
+        to: safe.email,
+        subject: 'Akun Anda Telah Diverifikasi',
+        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Akun Anda Telah Diverifikasi</h2>
+          <p>Selamat, akun Anda telah diverifikasi oleh admin. Silakan login ke sistem menggunakan email dan password Anda.</p>
+          <a href="${process.env.APP_URL || 'http://localhost:5173'}" style="display: inline-block; padding: 10px 20px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Login ke Sistem</a>
+          <p>Salam,<br>Tim Sistem Monitoring PEN</p>
+        </div>`
+      });
+    }
     return json({ success: true, data: safe });
   } catch (err: any) {
     console.error('/api/users/[id] PUT error', err);
