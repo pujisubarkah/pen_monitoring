@@ -16,6 +16,49 @@
 
 	let { data, form }: Props = $props();
 
+	// Stats data from API
+	let statsData = $state({
+		totalDesaKelurahan: 0,
+		tersosialisasi: 0,
+		berbadanHukum: 0,
+		loading: true
+	});
+
+	// Fetch statistics from API
+	async function fetchStatistics() {
+		try {
+			const response = await fetch('https://api.merahputih.kop.id/api/cooperative/statistic');
+			const result = await response.json();
+			
+			if (result.data && result.data.state) {
+				// Get total target from first item
+				const totalTarget = result.data.state[0]?.target || 0;
+				
+				// Get tersosialisasi (legalStageId: 1)
+				const tersosialisasi = result.data.state.find((item: any) => item.legalStageId === 1);
+				
+				// Get berbadan hukum (legalStageId: 3)
+				const berbadanHukum = result.data.state.find((item: any) => item.legalStageId === 3);
+				
+				statsData = {
+					totalDesaKelurahan: totalTarget,
+					tersosialisasi: tersosialisasi?.count || 0,
+					berbadanHukum: berbadanHukum?.count || 0,
+					loading: false
+				};
+			}
+		} catch (error) {
+			console.error('Error fetching statistics:', error);
+			// Use default values on error
+			statsData = {
+				totalDesaKelurahan: 83762,
+				tersosialisasi: 83750,
+				berbadanHukum: 81585,
+				loading: false
+			};
+		}
+	}
+
 	// Initialize user store with data from server
 	onMount(() => {
 		if (data.user) {
@@ -30,6 +73,9 @@
 			};
 			userStore.login(clientUser);
 		}
+		
+		// Fetch statistics on mount
+		fetchStatistics();
 	});
 
 	// Carousel functionality
@@ -69,6 +115,11 @@
 		startCarousel();
 		return () => stopCarousel();
 	});
+
+	// Format number with thousand separators
+	function formatNumber(num: number): string {
+		return num.toLocaleString('id-ID');
+	}
 </script>
 
 <svelte:head>
@@ -126,15 +177,33 @@
 					<!-- Stats Grid -->
 					<div class="stats-grid">
 						<div class="stat-item">
-							<div class="stat-number">83.762</div>
+							<div class="stat-number">
+								{#if statsData.loading}
+									<span class="loading-shimmer">--</span>
+								{:else}
+									{formatNumber(statsData.totalDesaKelurahan)}
+								{/if}
+							</div>
 							<div class="stat-label">Total Desa/Kelurahan</div>
 						</div>
 						<div class="stat-item">
-							<div class="stat-number">83.750</div>
+							<div class="stat-number">
+								{#if statsData.loading}
+									<span class="loading-shimmer">--</span>
+								{:else}
+									{formatNumber(statsData.tersosialisasi)}
+								{/if}
+							</div>
 							<div class="stat-label">Tersosialisasi</div>
 						</div>
 						<div class="stat-item">
-							<div class="stat-number">81.585</div>
+							<div class="stat-number">
+								{#if statsData.loading}
+									<span class="loading-shimmer">--</span>
+								{:else}
+									{formatNumber(statsData.berbadanHukum)}
+								{/if}
+							</div>
 							<div class="stat-label">Berbadan Hukum</div>
 						</div>
 					</div>
@@ -342,6 +411,25 @@
 		font-size: 0.875rem;
 		color: rgba(255, 255, 255, 0.8);
 		font-weight: 500;
+	}
+
+	/* Loading shimmer effect */
+	.loading-shimmer {
+		display: inline-block;
+		background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 25%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.1) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s infinite;
+		border-radius: 4px;
+		padding: 0 1rem;
+	}
+
+	@keyframes shimmer {
+		0% {
+			background-position: -200% 0;
+		}
+		100% {
+			background-position: 200% 0;
+		}
 	}
 
 	/* Background Carousel */
