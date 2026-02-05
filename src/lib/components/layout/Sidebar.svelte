@@ -5,6 +5,16 @@
 	const userInfo = writable({ userName: '', userInstansi: '' });
 	// Removed invalid $state import and usage
 
+
+
+	const menuSuperAdmin = [
+		{ name: 'Dashboard', path: `/super_admin`, icon: '🛡️' },
+		{ name: 'Manajemen User', path: `/super_admin/users`, icon: '👥' },
+		{ name: 'Master Instansi', path: `/super_admin/master_instansi`, icon: '🏢' },
+		{ name: 'Master Pilar', path: `/super_admin/master_pilar`, icon: '🏗️' },
+		{ name: 'Rencana Aksi', path: `/super_admin/rencana_aksi`, icon: '📋' }
+	];
+	
 	const menuAdmin = [
 		{ name: 'Dashboard', path: `/admin`, icon: '📊' },
 		{ name: 'Manajemen User', path: `/admin/users`, icon: '👥' },
@@ -23,8 +33,16 @@
 		{ name: 'Progress Pen', path: `/user/progress_pen`, icon: '📊' }
 	];
 
-	const isAdminRoute = $derived($page.url.pathname.startsWith('/admin'));
-	const menu = $derived(() => isAdminRoute ? menuAdmin : menuUser);
+
+	function getMenuByRoute() {
+		if ($page.url.pathname.startsWith('/super_admin')) {
+			return menuSuperAdmin;
+		} else if ($page.url.pathname.startsWith('/admin')) {
+			return menuAdmin;
+		} else {
+			return menuUser;
+		}
+	}
 
 	function updateUserFromLocalStorage() {
 		if (typeof localStorage !== 'undefined') {
@@ -50,7 +68,7 @@
 	});
 </script>
 
-<aside class="sidebar">
+<aside class="sidebar" style="background-color: #1f2937; color: white;">
 	<div class="sidebar-header">
 		<h2 class="sidebar-title">PEN Monitor</h2>
 		{#if $userInfo.userName}
@@ -62,7 +80,7 @@
 	</div>
 
 	<nav class="sidebar-nav">
-		{#each menu() as item}
+		{#each getMenuByRoute() as item}
 			<a
 				href={item.path}
 				class="nav-item"
@@ -85,23 +103,7 @@
 </aside>
 
 <style>
-	.sidebar {
-		width: 250px;
-		min-height: 100vh;
-		background-color: #1f2937;
-		color: white;
-		display: flex;
-		flex-direction: column;
-		border-right: 1px solid #374151;
-	}
-
 	.sidebar-header {
-		padding: 1.5rem;
-		border-bottom: 1px solid #374151;
-		background-color: #111827;
-	}
-
-	.sidebar-title {
 		font-size: 1.25rem;
 		font-weight: bold;
 		color: #3b82f6;
@@ -141,16 +143,6 @@
 	.nav-icon {
 		font-size: 1.25rem;
 		margin-right: 0.75rem;
-	}
-
-	.nav-text {
-		font-weight: 500;
-	}
-
-	.sidebar-footer {
-		padding: 1rem;
-		border-top: 1px solid #374151;
-		background-color: #111827;
 	}
 
 	.logout-btn {

@@ -10,8 +10,9 @@ if (!connectionString) {
 	throw new Error('DATABASE_URL environment variable is not set');
 }
 
+
 // Create postgres client
-const client = postgres(connectionString, {
+const client = postgres(connectionString + '?options=--search_path%3Dpen-monitoring', {
 	max: 10,
 	onnotice: () => {}, // Disable notices
 });

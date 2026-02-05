@@ -101,7 +101,12 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				instansi_id: user.instansi_id,
 				is_verified: user.is_verified
 			},
-			redirect: user.role === 'admin' ? '/admin' : '/user'
+			redirect:
+				user.role === 'super_admin'
+					? '/super_admin'
+					: user.role === 'admin'
+						? '/admin'
+						: '/user'
 		});
 
 	} catch (err) {

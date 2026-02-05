@@ -19,9 +19,11 @@
 	// Stats data from API
 	let statsData = $state({
 		totalDesaKelurahan: 0,
-		tersosialisasi: 0,
 		berbadanHukum: 0,
-		loading: true
+		desaBerbadanHukum: 0,
+		kelurahanBerbadanHukum: 0,
+		loading: true,
+		lastUpdated: ''
 	});
 
 	// Fetch statistics from API
@@ -29,32 +31,27 @@
 		try {
 			const response = await fetch('https://api.merahputih.kop.id/api/cooperative/statistic');
 			const result = await response.json();
-			
 			if (result.data && result.data.state) {
-				// Get total target from first item
-				const totalTarget = result.data.state[0]?.target || 0;
-				
-				// Get tersosialisasi (legalStageId: 1)
-				const tersosialisasi = result.data.state.find((item: any) => item.legalStageId === 1);
-				
-				// Get berbadan hukum (legalStageId: 3)
-				const berbadanHukum = result.data.state.find((item: any) => item.legalStageId === 3);
-				
+				const legalStage3 = result.data.state.find((item: any) => item.legalStageId === 3);
 				statsData = {
-					totalDesaKelurahan: totalTarget,
-					tersosialisasi: tersosialisasi?.count || 0,
-					berbadanHukum: berbadanHukum?.count || 0,
-					loading: false
+					totalDesaKelurahan: legalStage3?.target || 0,
+					berbadanHukum: legalStage3?.count || 0,
+					desaBerbadanHukum: legalStage3?.desa || 0,
+					kelurahanBerbadanHukum: legalStage3?.kelurahan || 0,
+					loading: false,
+					lastUpdated: result.data.latest_ahu_updated || ''
 				};
 			}
 		} catch (error) {
 			console.error('Error fetching statistics:', error);
 			// Use default values on error
 			statsData = {
-				totalDesaKelurahan: 83762,
-				tersosialisasi: 83750,
-				berbadanHukum: 81585,
-				loading: false
+				totalDesaKelurahan: 83631,
+				berbadanHukum: 83261,
+				desaBerbadanHukum: 74659,
+				kelurahanBerbadanHukum: 8602,
+				loading: false,
+				lastUpdated: ''
 			};
 		}
 	}
@@ -158,7 +155,7 @@
 			<!-- Footer -->
 			<div class="aside-footer">
 					<div class="footer-text">
-						@2025 Lembaga Administrasi Negara
+						 Hak Cipta @2025 Lembaga Administrasi Negara
 					</div>
 				</div>
 			</div>
@@ -175,7 +172,7 @@
 					</p>
 
 					<!-- Stats Grid -->
-					<div class="stats-grid">
+					  <div class="stats-grid">
 						<div class="stat-item">
 							<div class="stat-number">
 								{#if statsData.loading}
@@ -184,17 +181,7 @@
 									{formatNumber(statsData.totalDesaKelurahan)}
 								{/if}
 							</div>
-							<div class="stat-label">Total Desa/Kelurahan</div>
-						</div>
-						<div class="stat-item">
-							<div class="stat-number">
-								{#if statsData.loading}
-									<span class="loading-shimmer">--</span>
-								{:else}
-									{formatNumber(statsData.tersosialisasi)}
-								{/if}
-							</div>
-							<div class="stat-label">Tersosialisasi</div>
+							<div class="stat-label">Target Desa/Kelurahan</div>
 						</div>
 						<div class="stat-item">
 							<div class="stat-number">
@@ -204,9 +191,37 @@
 									{formatNumber(statsData.berbadanHukum)}
 								{/if}
 							</div>
-							<div class="stat-label">Berbadan Hukum</div>
+							<div class="stat-label">Total Berbadan Hukum</div>
+						</div>
+						<div class="stat-item">
+							<div class="stat-number">
+								{#if statsData.loading}
+									<span class="loading-shimmer">--</span>
+								{:else}
+									{formatNumber(statsData.desaBerbadanHukum)}
+								{/if}
+							</div>
+							<div class="stat-label">Desa Berbadan Hukum</div>
+						</div>
+						<div class="stat-item">
+							<div class="stat-number">
+								{#if statsData.loading}
+									<span class="loading-shimmer">--</span>
+								{:else}
+									{formatNumber(statsData.kelurahanBerbadanHukum)}
+								{/if}
+							</div>
+							<div class="stat-label">Kelurahan Berbadan Hukum</div>
 						</div>
 					</div>
+					<div class="logo-gabungan-wrapper">
+						<img src="https://simkopdes.go.id/images/logo-kementerian/gabungan2.png" alt="Logo Gabungan Kementerian" class="logo-gabungan" />
+					</div>
+					{#if statsData.lastUpdated}
+						<div class="stat-label" style="margin-top:0.5rem;color:#fff;font-size:0.9rem;">
+							Data terakhir diperbarui: {statsData.lastUpdated}
+						</div>
+					{/if}
 				</div>
 			</div>
 
@@ -544,5 +559,16 @@
 		.stat-number {
 			font-size: 1.5rem;
 		}
+	}
+	.logo-gabungan-wrapper {
+		margin: 2rem 0 0.5rem 0;
+		text-align: center;
+	}
+	.logo-gabungan {
+		max-width: 350px;
+		width: 100%;
+		height: auto;
+		display: inline-block;
+		filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
 	}
 </style>
