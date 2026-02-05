@@ -141,30 +141,38 @@
 	// =====================================
 	// Submit Add
 	// =====================================
-	function handleAdd(event: Event) {
+	async function handleAdd(event: Event) {
 		event.preventDefault();
-
 		if (!instansiId) return;
-
-		const newItem: ProgressItem = {
-			id: Date.now(), // Temporary ID
-			pilar: newFormData.pilar,
-			kegiatan: newFormData.kegiatan,
-			target_value: parseInt(newFormData.target_value) || 0,
-			target_desc: newFormData.target_desc,
-			milestone: newFormData.milestone,
-			capaian_value: parseInt(newFormData.capaian_value) || 0,
-			capaian_desc: newFormData.capaian_desc,
-			bukti: newFormData.bukti,
-			penjelasan: newFormData.penjelasan,
-			created_at: new Date().toISOString(),
-			instansi: 'Current Instansi',
-			actionPlanPicId: parseInt(instansiId)
-		};
-
-		progressData = [...progressData, newItem];
-		isModalOpen = false;
-		resetForm();
+		try {
+			const payload = {
+				pilar: newFormData.pilar,
+				kegiatan: newFormData.kegiatan,
+				target_value: parseInt(newFormData.target_value) || 0,
+				target_desc: newFormData.target_desc,
+				milestone: newFormData.milestone,
+				capaian_value: parseInt(newFormData.capaian_value) || 0,
+				capaian_desc: newFormData.capaian_desc,
+				bukti: newFormData.bukti,
+				penjelasan: newFormData.penjelasan,
+				instansi_id: parseInt(instansiId)
+			};
+			const res = await fetch('/api/action_plan_progress', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			const json = await res.json();
+			if (json.success) {
+				await fetchProgress(instansiId);
+				isModalOpen = false;
+				resetForm();
+			} else {
+				alert(json.message || 'Gagal menambah progress');
+			}
+		} catch (err) {
+			alert('Terjadi kesalahan saat menambah progress');
+		}
 	}
 
 	// =====================================
@@ -192,41 +200,60 @@
 	// =====================================
 	// Submit Edit
 	// =====================================
-	function handleEditSubmit(event: Event) {
+	async function handleEditSubmit(event: Event) {
 		event.preventDefault();
-
 		if (!editingItem) return;
-
-		const updatedItem: ProgressItem = {
-			...editingItem,
-			pilar: newFormData.pilar,
-			kegiatan: newFormData.kegiatan,
-			target_value: parseInt(newFormData.target_value) || 0,
-			target_desc: newFormData.target_desc,
-			milestone: newFormData.milestone,
-			capaian_value: parseInt(newFormData.capaian_value) || 0,
-			capaian_desc: newFormData.capaian_desc,
-			bukti: newFormData.bukti,
-			penjelasan: newFormData.penjelasan
-		};
-
-		progressData = progressData.map(item =>
-			item.id === editingItem!.id ? updatedItem : item
-		);
-
-		isModalOpen = false;
-		isEditMode = false;
-		editingItem = null;
-		resetForm();
+		try {
+			const payload = {
+				pilar: newFormData.pilar,
+				kegiatan: newFormData.kegiatan,
+				target_value: parseInt(newFormData.target_value) || 0,
+				target_desc: newFormData.target_desc,
+				milestone: newFormData.milestone,
+				capaian_value: parseInt(newFormData.capaian_value) || 0,
+				capaian_desc: newFormData.capaian_desc,
+				bukti: newFormData.bukti,
+				penjelasan: newFormData.penjelasan
+			};
+			const res = await fetch(`/api/action_plan_progress/${editingItem.id}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			const json = await res.json();
+			if (json.success) {
+				if (instansiId) await fetchProgress(instansiId);
+				isModalOpen = false;
+				isEditMode = false;
+				editingItem = null;
+				resetForm();
+			} else {
+				alert(json.message || 'Gagal mengedit progress');
+			}
+		} catch (err) {
+			alert('Terjadi kesalahan saat mengedit progress');
+		}
 	}
 
 	// =====================================
 	// Delete Progress
 	// =====================================
-	function handleDelete(item: ProgressItem) {
+	async function handleDelete(item: ProgressItem) {
 		if (confirm('Apakah Anda yakin ingin menghapus progress ini?')) {
-			progressData = progressData.filter(p => p.id !== item.id);
+			try {
+				const res = await fetch(`/api/action_plan_progress/${item.id}`, {
+					method: 'DELETE'
+				});
+				const json = await res.json();
+				if (json.success && instansiId) {
+					await fetchProgress(instansiId);
+				} else {
+					alert(json.message || 'Gagal menghapus progress');
+				}
+			} catch (err) {
+				alert('Terjadi kesalahan saat menghapus progress');
 		}
+	}
 	}
 
 	// =====================================
