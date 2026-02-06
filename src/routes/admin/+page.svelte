@@ -1,147 +1,42 @@
 ﻿
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
-	import { goto } from '$app/navigation';
-	import StatCard from '$lib/components/cards/StatCard.svelte';
-	import ProgressChart from '$lib/components/charts/ProgressChart.svelte';
+	type ProvinceData = {
+		province: string;
+		desa: number;
+		kelurahan: number;
+		stage3: number;
+		percentage: string;
+	};
 
-	// Store for admin info
-	export const adminInfo = writable({ adminName: '' });
+	let provinces: ProvinceData[] = [];
+	let loading = true;
+	let error = '';
 
-	// Dummy data for dashboard stats
-	let stats = $state([
-		{
-			title: 'Total Pengguna',
-			value: 0, // Will be updated from API
-			subtitle: 'Pengguna terdaftar',
-			icon: '👥',
-			trend: 'up' as const,
-			trendValue: '+12%',
-			color: 'blue' as const
-		},
-		{
-			title: 'Rencana Aksi',
-			value: 0, // Will be updated from API
-			subtitle: 'Aksi aktif',
-			icon: '📋',
-			trend: 'up' as const,
-			trendValue: '+5%',
-			color: 'green' as const
-		},
-		{
-			title: 'Progress Rata-rata',
-			value: '0%', // Will be updated from API
-			subtitle: 'Pencapaian target',
-			icon: '📈',
-			trend: 'up' as const,
-			trendValue: '+3%',
-			color: 'purple' as const
-		},
-		{
-			title: 'Instansi Terlibat',
-			value: 0, // Will be updated from API
-			subtitle: 'Instansi aktif',
-			icon: '🏢',
-			trend: 'neutral' as const,
-			trendValue: '0%',
-			color: 'yellow' as const
-		}
-	]);
-
-	// Dummy data for progress chart
-	let progressData = $state([
-		{ date: 'Jan', value: 20, label: 'Januari' },
-		{ date: 'Feb', value: 35, label: 'Februari' },
-		{ date: 'Mar', value: 45, label: 'Maret' },
-		{ date: 'Apr', value: 60, label: 'April' },
-		{ date: 'May', value: 72, label: 'Mei' },
-		{ date: 'Jun', value: 78, label: 'Juni' }
-	]);
-
-	function updateAdminFromLocalStorage() {
-		if (typeof localStorage !== 'undefined') {
-			const user = localStorage.getItem('user');
-			if (user) {
-				try {
-					const parsed = JSON.parse(user);
-					adminInfo.set({
-						adminName: parsed.nama || parsed.name || 'Admin'
-					});
-				} catch (e) {
-					adminInfo.set({ adminName: 'Admin' });
-				}
-			} else {
-				adminInfo.set({ adminName: 'Admin' });
-			}
-		}
-	}
-
-	async function loadDashboardStats() {
+	async function fetchData() {
+		loading = true;
+		error = '';
 		try {
-			// Load users count
-			const usersResponse = await fetch('/api/users');
-			const usersResult = await usersResponse.json();
-			if (usersResult.success) {
-				stats[0].value = usersResult.data.length;
+			const res = await fetch('https://api.merahputih.kop.id/api/cooperative/statistic');
+			const json = await res.json();
+			if (json && json.data && Array.isArray(json.data.mapping)) {
+				provinces = json.data.mapping.map((item: any) => ({
+					province: item.province,
+					desa: item.desa,
+					kelurahan: item.kelurahan,
+					stage3: item.stage3,
+					percentage: item.percentage
+				}));
+			} else {
+				error = 'Data tidak ditemukan.';
 			}
-
-			// Load action plans count and calculate average progress
-			const actionPlansResponse = await fetch('/api/action-plans?limit=all');
-			const actionPlansResult = await actionPlansResponse.json();
-			if (actionPlansResult.success) {
-				stats[1].value = actionPlansResult.data.length;
-
-				// Calculate average progress
-				let totalProgress = 0;
-				let progressCount = 0;
-
-				actionPlansResult.data.forEach((plan: any) => {
-					if (plan.actionPlanProgresses && plan.actionPlanProgresses.length > 0) {
-						plan.actionPlanProgresses.forEach((progress: any) => {
-							totalProgress += progress.capaian || 0;
-							progressCount++;
-						});
-					}
-				});
-
-				const averageProgress = progressCount > 0 ? Math.round(totalProgress / progressCount) : 0;
-				stats[2].value = `${averageProgress}%`;
-			}
-
-			// Load instansi count
-			const instansiResponse = await fetch('/api/instansi');
-			const instansiResult = await instansiResponse.json();
-			if (instansiResult.success) {
-				stats[3].value = instansiResult.data.length;
-			}
-		} catch (error) {
-			console.error('Failed to load dashboard stats:', error);
+		} catch (e) {
+			error = 'Gagal mengambil data.';
 		}
+		loading = false;
 	}
 
-	onMount(() => {
-		updateAdminFromLocalStorage();
-		window.addEventListener('storage', updateAdminFromLocalStorage);
-		loadDashboardStats();
-	});
-
-	// Quick action handlers
-	function goToLaporan() {
-		goto('/admin/laporan');
-	}
-
-	function goToRencanaAksi() {
-		goto('/admin/rencana_aksi');
-	}
-
-	function goToUsers() {
-		goto('/admin/users');
-	}
-
-	function goToPetaKinerja() {
-		goto('/admin/peta_kinerja');
-	}
+	onMount(fetchData);
 </script>
 
 
@@ -151,94 +46,76 @@
 
 <main class="min-h-screen bg-linear-to-br from-blue-50 via-white to-green-50 p-6">
 	<div class="max-w-7xl mx-auto">
-		<!-- Header -->
 		<div class="mb-8">
-			<h1 class="text-3xl font-bold text-gray-900 mb-2 animate-fade-in">
-				Selamat Datang, {$adminInfo.adminName}!
-			</h1>
-			<p class="text-lg text-gray-600">
-				Dashboard Admin PEN Monitoring - Pantau dan kelola progress aksi PEN dengan mudah.
-			</p>
+			<h1 class="text-3xl font-bold text-gray-900 mb-2">Tabel Koperasi Terbentuk per Provinsi</h1>
+			<p class="text-lg text-gray-600">Data jumlah koperasi kelurahan/desa yang telah berbadan hukum per provinsi.</p>
 		</div>
-
-		<!-- Stats Cards Grid -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-			{#each stats as stat, index}
-				<div class="animate-slide-up" style="animation-delay: {index * 0.1}s">
-					<StatCard
-						title={stat.title}
-						value={stat.value}
-						subtitle={stat.subtitle}
-						icon={stat.icon}
-						trend={stat.trend}
-						trendValue={stat.trendValue}
-						color={stat.color}
-					/>
-				</div>
-			{/each}
-		</div>
-
-		<!-- Charts Section -->
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-			<!-- Progress Chart -->
-			<div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.4s">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Progress Bulanan</h2>
-				<ProgressChart data={progressData} title="Progress Pencapaian Target" />
-			</div>
-
-			<!-- Quick Actions -->
-			<div class="bg-white rounded-xl shadow-lg p-6 animate-fade-in" style="animation-delay: 0.5s">
-				<h2 class="text-xl font-semibold text-gray-900 mb-4">Aksi Cepat</h2>
-				<div class="space-y-3">
-					<button onclick={goToLaporan} class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-						📊 Lihat Laporan
-					</button>
-					<button onclick={goToRencanaAksi} class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-						➕ Tambah Rencana Aksi
-					</button>
-					<button onclick={goToUsers} class="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-						👥 Kelola Pengguna
-					</button>
-					<button onclick={goToPetaKinerja} class="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2">
-						📍 Lihat Peta Kinerja
-					</button>
-				</div>
-			</div>
+		<div class="overflow-x-auto">
+			{#if loading}
+				<div class="p-8 text-center text-gray-500">Memuat data...</div>
+			{:else if error}
+				<div class="p-8 text-center text-red-500">{error}</div>
+			{:else}
+				<table class="min-w-full table-auto border border-gray-300 bg-white rounded-xl shadow-lg">
+					<colgroup>
+						<col style="width: 50px;">
+						<col style="width: 230px;">
+						<col style="width: 230px;">
+						<col style="width: 230px;">
+						<col style="width: 230px;">
+						<col style="width: 100px;">
+					</colgroup>
+					<thead class="bg-gray-100">
+						<tr>
+							<th>No</th>
+							<th>Provinsi</th>
+							<th>Jumlah Koperasi Kelurahan Terbentuk (Berbadan Hukum)</th>
+							<th>Jumlah Koperasi Desa Terbentuk (Berbadan Hukum)</th>
+							<th>Jumlah Koperasi Terbentuk (Berbadan Hukum)</th>
+							<th>Detail Kabupaten/Kota</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each provinces as prov, i}
+							<tr>
+								<td>{i + 1}</td>
+								<td>{prov.province}</td>
+								<td>{prov.kelurahan}</td>
+								<td>{prov.desa}</td>
+								<td><span class="font-bold">{prov.stage3} ({prov.percentage}%)</span></td>
+								<td><button type="button" class="text-blue-600 underline">Lihat Kabupaten/Kota</button></td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
 		</div>
 	</div>
 </main>
 
 <style>
-	@keyframes fade-in {
-		from {
-			opacity: 0;
-			transform: translateY(20px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+	table {
+		border-collapse: collapse;
+		width: 100%;
 	}
-
-	@keyframes slide-up {
-		from {
-			opacity: 0;
-			transform: translateY(30px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+	th, td {
+		border: 1px solid #e5e7eb;
+		padding: 8px;
+		text-align: left;
 	}
-
-	.animate-fade-in {
-		animation: fade-in 0.6s ease-out forwards;
-		opacity: 0;
+	th {
+		background-color: #f3f4f6;
+		font-weight: 600;
 	}
-
-	.animate-slide-up {
-		animation: slide-up 0.5s ease-out forwards;
-		opacity: 0;
+	.font-bold {
+		font-weight: bold;
+	}
+	button {
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		font-size: 1rem;
 	}
 </style>
 
