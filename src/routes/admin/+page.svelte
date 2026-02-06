@@ -1,42 +1,43 @@
 ﻿
 <script lang="ts">
-	import { onMount } from 'svelte';
-	type ProvinceData = {
-		province: string;
-		desa: number;
-		kelurahan: number;
-		stage3: number;
-		percentage: string;
-	};
+import { onMount } from 'svelte';
+import { provinces as provinceMap } from '$lib/constants/provinces';
+type ProvinceData = {
+	province: string;
+	desa: number;
+	kelurahan: number;
+	stage3: number;
+	percentage: string;
+};
 
-	let provinces: ProvinceData[] = [];
-	let loading = true;
-	let error = '';
+let provinces: ProvinceData[] = [];
+let loading = true;
+let error = '';
 
-	async function fetchData() {
-		loading = true;
-		error = '';
-		try {
-			const res = await fetch('https://api.merahputih.kop.id/api/cooperative/statistic');
-			const json = await res.json();
-			if (json && json.data && Array.isArray(json.data.mapping)) {
-				provinces = json.data.mapping.map((item: any) => ({
-					province: item.province,
-					desa: item.desa,
-					kelurahan: item.kelurahan,
-					stage3: item.stage3,
-					percentage: item.percentage
-				}));
-			} else {
-				error = 'Data tidak ditemukan.';
-			}
-		} catch (e) {
-			error = 'Gagal mengambil data.';
+async function fetchData() {
+	loading = true;
+	error = '';
+	try {
+		const res = await fetch('https://api.merahputih.kop.id/api/cooperative/statistic');
+		const json = await res.json();
+		if (json && json.data && Array.isArray(json.data.mapping)) {
+			provinces = json.data.mapping.map((item: any) => ({
+				province: item.province,
+				desa: item.desa,
+				kelurahan: item.kelurahan,
+				stage3: item.stage3,
+				percentage: item.percentage
+			}));
+		} else {
+			error = 'Data tidak ditemukan.';
 		}
-		loading = false;
+	} catch (e) {
+		error = 'Gagal mengambil data.';
 	}
+	loading = false;
+}
 
-	onMount(fetchData);
+onMount(fetchData);
 </script>
 
 
@@ -83,7 +84,17 @@
 								<td>{prov.kelurahan}</td>
 								<td>{prov.desa}</td>
 								<td><span class="font-bold">{prov.stage3} ({prov.percentage}%)</span></td>
-								<td><button type="button" class="text-blue-600 underline">Lihat Kabupaten/Kota</button></td>
+								<td>
+									{#if provinceMap.find(p => p.name.toUpperCase() === prov.province.toUpperCase())}
+										{@const foundProvince = provinceMap.find(p => p.name.toUpperCase() === prov.province.toUpperCase())}
+										<a
+											class="text-blue-600 underline hover:text-blue-800"
+											href={`/admin/kabupaten/${foundProvince?.id}`}
+										>
+											Lihat Kabupaten/Kota
+										</a>
+									{/if}
+								</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -109,13 +120,6 @@
 	}
 	.font-bold {
 		font-weight: bold;
-	}
-	button {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0;
-		font-size: 1rem;
 	}
 </style>
 

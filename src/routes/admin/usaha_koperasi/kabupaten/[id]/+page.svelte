@@ -31,6 +31,10 @@
 </script>
 
 <div class="w-full px-2 sm:px-4 py-4 sm:py-6 mx-auto max-w-7xl overflow-x-hidden">
+  <a href="/admin/usaha_koperasi" class="inline-flex items-center mb-4 px-3 py-1.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium shadow transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+    Kembali
+  </a>
   <div class="text-lg sm:text-xl font-bold mb-2 text-[#065366]">Detail Kabupaten/Kota - {provinceName}</div>
   {#if loading}
     <div class="text-center py-10 text-gray-500">Memuat data...</div>

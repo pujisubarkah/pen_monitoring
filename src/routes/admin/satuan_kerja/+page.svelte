@@ -80,6 +80,16 @@
             <text x="72" y="187" font-size="12" text-anchor="end" fill="#666">16000</text>
             <text x="72" y="40" font-size="12" text-anchor="end" fill="#666">31606</text>
           </svg>
+          <div class="flex justify-center gap-6 mt-2">
+            <span class="recharts-legend-item-text flex items-center gap-2">
+              <span style="display:inline-block;width:16px;height:16px;background:rgb(76,201,254);border-radius:3px;"></span>
+              <span style="color: rgb(76, 201, 254);">Total Koperasi</span>
+            </span>
+            <span class="recharts-legend-item-text flex items-center gap-2">
+              <span style="display:inline-block;width:16px;height:16px;background:rgb(130,202,157);border-radius:3px;"></span>
+              <span style="color: rgb(130, 202, 157);">Total Desa/Kelurahan Terbentuk Melalui Musyawarah Desa Khusus</span>
+            </span>
+          </div>
         {/if}
       </div>
     </div>
