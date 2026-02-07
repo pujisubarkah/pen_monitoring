@@ -27,6 +27,11 @@
 		completed: number;
 	};
 
+	type InstansiOption = {
+		id: number;
+		namaInstansi: string;
+	};
+
 	// =====================================
 	// State
 	// =====================================
@@ -42,14 +47,50 @@
 	let loading = true;
 	let error = '';
 	let instansiName: string = '';
+	let assignedInstansi: InstansiOption[] = [];
+	let selectedInstansiId: number | null = null;
+	let previousInstansiId: number | null = null;
 
 	// Get user data from parent layout
 	$: userData = $page.data.user;
-	$: instansiId = userData?.instansi_id;
+	$: userId = userData?.id;
+	$: instansiId = selectedInstansiId || userData?.instansi_id;
 
 	// =====================================
 	// Fetch Data dari API
 	// =====================================
+	async function fetchAssignedInstansi() {
+		try {
+			if (!userId) return;
+
+			const res = await fetch(`/api/users/${userId}/instansi`);
+			const json = await res.json();
+
+			if (json.success && json.data) {
+				assignedInstansi = json.data;
+				
+				// If user has old instansi_id (single assignment), use it as default
+				if (userData?.instansi_id && !selectedInstansiId) {
+					selectedInstansiId = userData.instansi_id;
+					previousInstansiId = userData.instansi_id;
+				}
+				// Otherwise, if user has multiple assignments, select the first one
+				else if (assignedInstansi.length > 0 && !selectedInstansiId) {
+					selectedInstansiId = assignedInstansi[0].id;
+					previousInstansiId = assignedInstansi[0].id;
+				}
+
+				// Set instansi name
+				const selected = assignedInstansi.find(i => i.id === selectedInstansiId);
+				if (selected) {
+					instansiName = selected.namaInstansi;
+				}
+			}
+		} catch (err) {
+			console.error('Error loading assigned instansi:', err);
+		}
+	}
+
 	async function fetchProgress() {
 		try {
 			loading = true;
@@ -150,8 +191,20 @@
 	}
 
 	onMount(() => {
-		fetchProgress();
+		fetchAssignedInstansi().then(() => {
+			fetchProgress();
+		});
 	});
+
+	// Watch for instansi selection changes (only when the ID actually changes)
+	$: if (selectedInstansiId && selectedInstansiId !== previousInstansiId) {
+		previousInstansiId = selectedInstansiId;
+		const selected = assignedInstansi.find(i => i.id === selectedInstansiId);
+		if (selected) {
+			instansiName = selected.namaInstansi;
+		}
+		fetchProgress();
+	}
 </script>
 
 <svelte:head>
@@ -179,6 +232,26 @@
 				<span>Export</span>
 			</button>
 		</div>
+
+		<!-- Filter Dropdown for Multiple Instansi -->
+		{#if assignedInstansi.length > 1}
+			<div class="bg-white rounded-xl shadow-lg p-6">
+				<label for="instansi-filter" class="block text-sm font-medium text-gray-700 mb-2">
+					Pilih Instansi:
+				</label>
+				<select
+					id="instansi-filter"
+					bind:value={selectedInstansiId}
+					class="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				>
+					{#each assignedInstansi as inst}
+						<option value={inst.id}>
+							{inst.namaInstansi}
+						</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
 
 		{#if loading}
 			<div class="flex items-center justify-center py-20">

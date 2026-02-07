@@ -9,6 +9,7 @@ type Admin = {
 	role: string;
 	instansi_id: number | null;
 	nama_instansi: string | null;
+	assignedInstansi?: { id: number; namaInstansi: string }[]; // Multiple instansi
 };
 
 type Instansi = {
@@ -25,30 +26,41 @@ let error = '';
 let showAssignModal = false;
 let selectedAdmin: Admin | null = null;
 let selectedInstansiId: number | string | null = null;
+let adminAssignedInstansi: { id: number; namaInstansi: string }[] = [];
 
 // Pagination state
 let currentPage = 1;
 const pageSize = 10;
 let totalPages = 1;
 
-onMount(async () => {
+	onMount(async () => {
 	loading = true;
 	try {
 		// Fetch all users with role admin
 		const resUsers = await fetch('/api/users');
 		const dataUsers = await resUsers.json();
-		if (dataUsers.success) {
-			admins = dataUsers.data.filter((u: any) => u.role === 'admin');
-			console.log('Initial admins loaded:', admins);
-			totalPages = Math.ceil(admins.length / pageSize) || 1;
+		const adminUsers = dataUsers.data.filter((u: any) => u.role === 'admin');
+			
+		// Fetch assigned instansi for each admin
+		for (const admin of adminUsers) {
+			const resInstansiAssignments = await fetch(`/api/users/${admin.id}/instansi`);
+			const dataAssignments = await resInstansiAssignments.json();
+			if (dataAssignments.success) {
+				admin.assignedInstansi = dataAssignments.data;
+			} else {
+				admin.assignedInstansi = [];
+			}
 		}
+		
+		admins = adminUsers;
+		console.log('Initial admins loaded:', admins);
+		totalPages = Math.ceil(admins.length / pageSize) || 1;
 
 		// Fetch instansi list
 		const resInstansi = await fetch('/api/instansi');
 		const dataInstansi = await resInstansi.json();
 		if (dataInstansi.success) {
 			instansiList = dataInstansi.data;
-			console.log('Loaded instansi list:', instansiList);
 		}
 	} catch (e) {
 		error = 'Gagal memuat data';
@@ -60,9 +72,84 @@ onMount(async () => {
 
 function openAssignModal(admin: Admin) {
 	selectedAdmin = admin;
-	selectedInstansiId = admin.instansi_id ? String(admin.instansi_id) : '';
-	console.log('Opening modal for admin:', admin, 'Selected instansi ID:', selectedInstansiId);
+	adminAssignedInstansi = admin.assignedInstansi || [];
+	selectedInstansiId = '';
+	console.log('Opening modal for admin:', admin, 'Assigned instansi:', adminAssignedInstansi);
 	showAssignModal = true;
+}
+
+async function handleAddInstansi() {
+	if (!selectedAdmin || !selectedInstansiId) return;
+
+	const instansiIdToAdd = Number(selectedInstansiId);
+	console.log('Adding instansi:', { adminId: selectedAdmin.id, instansiId: instansiIdToAdd });
+
+	try {
+		const response = await fetch(`/api/users/${selectedAdmin.id}/instansi`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				instansi_id: instansiIdToAdd
+			}),
+		});
+
+		const result = await response.json();
+
+		if (result.success) {
+			toastStore.success('Instansi berhasil ditambahkan');
+			selectedInstansiId = '';
+			
+			// Reload assignments for this admin
+			const resInstansiAssignments = await fetch(`/api/users/${selectedAdmin.id}/instansi`);
+			const dataAssignments = await resInstansiAssignments.json();
+			if (dataAssignments.success) {
+				adminAssignedInstansi = dataAssignments.data;
+				
+				// Update in admins array
+				const adminIndex = admins.findIndex(a => a.id === selectedAdmin?.id);
+				if (adminIndex !== -1) {
+					admins[adminIndex].assignedInstansi = dataAssignments.data;
+				}
+			}
+		} else {
+			toastStore.error(result.message || 'Gagal menambahkan instansi');
+		}
+	} catch (err) {
+		console.error('Error adding instansi:', err);
+		toastStore.error('Terjadi kesalahan saat menambahkan instansi');
+	}
+}
+
+async function handleRemoveInstansi(instansiId: number) {
+	if (!selectedAdmin) return;
+
+	try {
+		const response = await fetch(`/api/users/${selectedAdmin.id}/instansi?instansi_id=${instansiId}`, {
+			method: 'DELETE',
+		});
+
+		const result = await response.json();
+
+		if (result.success) {
+			toastStore.success('Instansi berhasil dihapus');
+			
+			// Remove from local state
+			adminAssignedInstansi = adminAssignedInstansi.filter(i => i.id !== instansiId);
+			
+			// Update in admins array
+			const adminIndex = admins.findIndex(a => a.id === selectedAdmin?.id);
+			if (adminIndex !== -1) {
+				admins[adminIndex].assignedInstansi = adminAssignedInstansi;
+			}
+		} else {
+			toastStore.error(result.message || 'Gagal menghapus instansi');
+		}
+	} catch (err) {
+		console.error('Error removing instansi:', err);
+		toastStore.error('Terjadi kesalahan saat menghapus instansi');
+	}
 }
 
 async function handleAssignSubmit() {
@@ -272,10 +359,10 @@ $: paginatedAdmins = admins.slice((currentPage - 1) * pageSize, currentPage * pa
 		class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-start justify-center pt-20" 
 		on:click={closeModal}
 		on:keydown={(e) => e.key === 'Escape' && closeModal()}
-		role="presentation"
+		role="button"
+		tabindex="0"
 	>
-		<div 
-			class="relative p-6 border border-gray-200 w-full max-w-md shadow-xl rounded-lg bg-white" 
+		<div class="w-full max-w-2xl shadow-xl rounded-lg bg-white" 
 			on:click|stopPropagation
 			on:keydown|stopPropagation={(e) => e.key === 'Escape' && closeModal()}
 			role="dialog"
@@ -285,31 +372,66 @@ $: paginatedAdmins = admins.slice((currentPage - 1) * pageSize, currentPage * pa
 		>
 			<div>
 				<h3 id="modal-title" class="text-lg font-semibold leading-6 text-gray-900 mb-4">
-					Tugaskan Admin ke Instansi
+					Kelola Penugasan Admin ke Instansi
 				</h3>
 				<div class="mb-6">
 					<p class="text-sm text-gray-600 mb-1">Admin: <span class="font-semibold">{selectedAdmin.name}</span></p>
 					<p class="text-sm text-gray-600 mb-4">Email: <span class="font-semibold">{selectedAdmin.email}</span></p>
 					
-					<label for="instansi-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Instansi</label>
-					<select
-						id="instansi-select"
-						bind:value={selectedInstansiId}
-						class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white"
-					>
-						<option value="">-- Tidak Ditugaskan --</option>
-						{#each instansiList as instansi}
-							<option value={instansi.id}>{instansi.namaInstansi}</option>
-						{/each}
-					</select>
+					<!-- Current Assignments -->
+					<fieldset class="mb-4">
+						<legend class="block text-sm font-medium text-gray-700 mb-2">Instansi yang Ditugaskan:</legend>
+						{#if adminAssignedInstansi.length > 0}
+							<div class="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+								{#each adminAssignedInstansi as inst}
+									<div class="flex items-center justify-between bg-green-50 rounded-lg p-2">
+										<span class="text-sm font-medium text-green-800">{inst.namaInstansi}</span>
+										<button
+											on:click={() => handleRemoveInstansi(inst.id)}
+											class="text-red-600 hover:text-red-800 text-xs font-medium"
+										>
+											Hapus
+										</button>
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<p class="text-sm text-gray-500 italic bg-gray-50 rounded-lg p-3">Belum ada instansi yang ditugaskan</p>
+						{/if}
+					</fieldset>
+
+					<!-- Add New Assignment -->
+					<div class="border-t border-gray-200 pt-4">
+						<label for="instansi-select" class="block text-sm font-medium text-gray-700 mb-2">Tambah Instansi Baru:</label>
+						<div class="flex gap-2">
+							<select
+								id="instansi-select"
+								bind:value={selectedInstansiId}
+								class="flex-1 pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white"
+							>
+								<option value="">-- Pilih Instansi --</option>
+								{#each instansiList.filter(inst => !adminAssignedInstansi.some(ai => ai.id === inst.id)) as instansi}
+									<option value={instansi.id}>{instansi.namaInstansi}</option>
+								{/each}
+							</select>
+							<button
+								type="button"
+								on:click|stopPropagation={handleAddInstansi}
+								disabled={!selectedInstansiId}
+								class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								Tambah
+							</button>
+						</div>
+					</div>
 				</div>
-				<div class="flex justify-end gap-3">
+				<div class="flex justify-end gap-3 border-t border-gray-200 pt-4">
 					<button
 						type="button"
 						on:click|stopPropagation={closeModal}
 						class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
 					>
-						Batal
+						Tutup
 					</button>
 					<button
 						type="button"

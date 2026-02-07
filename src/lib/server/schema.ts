@@ -1,6 +1,7 @@
 // Re-export all schemas and types from separate files
 export * from './schemas/base-schema';
 export * from './schemas/user-schemas';
+export * from './schemas/user-instansi-assignment-schemas';
 export * from './schemas/instansi-schemas';
 export * from './schemas/pilar-schemas';
 export * from './schemas/kegiatan-schemas';
