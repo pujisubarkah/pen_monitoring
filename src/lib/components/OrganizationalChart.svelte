@@ -22,7 +22,6 @@
 						<div class="org-node org-node-root">
 							<div class="org-node-content">
 								<span class="org-title">{node.namaInstansi}</span>
-								<span class="org-id">ID: {node.instansiId}</span>
 							</div>
 							<div class="org-node-icon">🏛️</div>
 						</div>
@@ -33,7 +32,6 @@
 										<div class="org-node org-node-child">
 											<div class="org-node-content">
 												<span class="org-title">{child.namaInstansi}</span>
-												<span class="org-id">ID: {child.instansiId}</span>
 												{#if child.milestone || child.pic}
 												<div class="org-extra-info mt-1 text-xs text-gray-600">
 													{#if child.milestone}
@@ -72,7 +70,6 @@
 														<div class="org-node org-node-grandchild">
 															<div class="org-node-content">
 																<span class="org-title">{grandchild.namaInstansi}</span>
-																<span class="org-id">ID: {grandchild.instansiId}</span>
 															</div>
 															<div class="org-node-icon">
 																{#if grandchild.namaInstansi.includes('Keuangan') || grandchild.namaInstansi.includes('Bank')}
@@ -260,8 +257,7 @@
 		color: white;
 	}
 
-	.org-node-root .org-title,
-	.org-node-root .org-id {
+	.org-node-root .org-title {
 		color: white;
 	}
 
@@ -292,12 +288,6 @@
 		color: #0f172a;
 		margin-bottom: 0.25rem;
 		line-height: 1.2;
-	}
-
-	.org-id {
-		font-size: 0.875rem;
-		color: #64748b;
-		font-weight: 500;
 	}
 
 	.org-node-icon {

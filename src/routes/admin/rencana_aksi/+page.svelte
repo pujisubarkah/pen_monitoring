@@ -3,6 +3,7 @@
 	import ActionPlanTable from '$lib/components/ActionPlanTable.svelte';
 	import { onMount } from 'svelte';
 	import { toastStore } from '$lib/stores/toastStore';
+	import { page } from '$app/stores';
 
 	type ActionPlan = {
 		id: number;
@@ -23,9 +24,18 @@
 
 	let showModal = false;
 
+	// Get user data from parent layout
+	$: userData = $page.data.user;
+	$: instansiId = userData?.instansi_id;
+
 	async function loadActionPlans() {
 		try {
-			const response = await fetch('/api/action-plans?limit=full');
+			// Filter by instansi if admin has instansi_id assigned
+			const url = instansiId 
+				? `/api/action-plans/instansi/${instansiId}`
+				: '/api/action-plans?limit=full';
+			
+			const response = await fetch(url);
 			const result = await response.json();
 			
 			if (result.success) {

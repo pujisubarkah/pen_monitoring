@@ -25,15 +25,18 @@
 		{ name: 'Satuan Kerja', path: `/admin/satuan_kerja`, icon: '🏢' },
 		{ name: 'Pengembangan Usaha Koperasi', path: `/admin/usaha_koperasi`, icon: '🏪' },
 		{ name: 'Peta Kinerja', path: `/admin/peta_kinerja`, icon: '🗺️' },
+		{ name: 'Progress Instansi', path: `/admin/dashboard_instansi`, icon: '🏛️' },
 		{ name: 'Laporan', path: `/admin/laporan`, icon: '📄' }
+
 	];
 
 	const menuUser = [
 		{ name: 'Dashboard', path: `/user`, icon: '🏠' },
 		{ name: 'Profile', path: `/user/profile`, icon: '👤' },
 		{ name: 'Rencana Aksi', path: `/user/aksi`, icon: '📝' },
-		{ name: 'Progress', path: `/user/progress`, icon: '📈' },
-		{ name: 'Progress Pen', path: `/user/progress_pen`, icon: '📊' }
+		{ name: 'Progress Pen', path: `/user/progress_pen`, icon: '📊' },
+		{ name: 'Progress', path: `/user/progress`, icon: '📈' }
+
 	];
 
 	const menu = derived(page, ($page) => {

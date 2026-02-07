@@ -2,6 +2,7 @@
 <script lang="ts">
 import ProgressTable from '$lib/components/ProgressTable.svelte';
 import { onMount } from 'svelte';
+import { page } from '$app/stores';
 
 // Fungsi export PDF
 async function exportToPDF() {
@@ -39,12 +40,21 @@ async function exportToPDF() {
 	let loading = false;
 	let error = '';
 
+	// Get user data from parent layout
+	$: userData = $page.data.user;
+	$: instansiId = userData?.instansi_id;
+
 	async function loadProgressData() {
 		try {
 			loading = true;
 			error = '';
 
-			const response = await fetch('/api/action-plans?limit=all');
+			// Filter by instansi if admin has instansi_id assigned
+			const url = instansiId 
+				? `/api/action-plans/instansi/${instansiId}`
+				: '/api/action-plans?limit=all';
+			
+			const response = await fetch(url);
 			const result = await response.json();
 
 			if (result.success) {

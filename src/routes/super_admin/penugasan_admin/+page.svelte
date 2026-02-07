@@ -1,27 +1,30 @@
 <script lang="ts">
-// TODO: Integrasi API dan data user/admin
 import { onMount } from 'svelte';
+import { toastStore } from '$lib/stores/toastStore';
 
-type User = {
+type Admin = {
 	id: number;
 	name: string;
 	email: string;
 	role: string;
-	// tambahkan properti lain jika diperlukan
+	instansi_id: number | null;
+	nama_instansi: string | null;
 };
 
-let users: User[] = [];
-let admins: User[] = [];
-
-type Assignment = {
-	userId: number;
-	adminId: number;
-	adminName: string;
+type Instansi = {
+	id: number;
+	namaInstansi: string;
 };
 
-let assignments: Assignment[] = [];
+let admins: Admin[] = [];
+let instansiList: Instansi[] = [];
 let loading = true;
 let error = '';
+
+// Modal state
+let showAssignModal = false;
+let selectedAdmin: Admin | null = null;
+let selectedInstansiId: number | string | null = null;
 
 // Pagination state
 let currentPage = 1;
@@ -31,35 +34,90 @@ let totalPages = 1;
 onMount(async () => {
 	loading = true;
 	try {
-		// Fetch users
+		// Fetch all users with role admin
 		const resUsers = await fetch('/api/users');
 		const dataUsers = await resUsers.json();
-		if (dataUsers.success) users = dataUsers.data;
+		if (dataUsers.success) {
+			admins = dataUsers.data.filter((u: any) => u.role === 'admin');
+			console.log('Initial admins loaded:', admins);
+			totalPages = Math.ceil(admins.length / pageSize) || 1;
+		}
 
-		// Fetch admins (role: admin)
-		admins = users.filter((u: any) => u.role === 'admin');
-
-		// Fetch assignments (dummy, ganti dengan API jika ada)
-		assignments = [];
-
-		// Set total pages
-		totalPages = Math.ceil(users.filter(u => u.role !== 'admin' && u.role !== 'super_admin').length / pageSize) || 1;
+		// Fetch instansi list
+		const resInstansi = await fetch('/api/instansi');
+		const dataInstansi = await resInstansi.json();
+		if (dataInstansi.success) {
+			instansiList = dataInstansi.data;
+			console.log('Loaded instansi list:', instansiList);
+		}
 	} catch (e) {
 		error = 'Gagal memuat data';
+		console.error('Error loading data:', e);
 	} finally {
 		loading = false;
 	}
 });
 
-function assignAdmin(userId: number, adminId: number) {
-	// TODO: Panggil API untuk assign admin ke user
-	alert(`Assign admin ${adminId} ke user ${userId}`);
+function openAssignModal(admin: Admin) {
+	selectedAdmin = admin;
+	selectedInstansiId = admin.instansi_id ? String(admin.instansi_id) : '';
+	console.log('Opening modal for admin:', admin, 'Selected instansi ID:', selectedInstansiId);
+	showAssignModal = true;
+}
+
+async function handleAssignSubmit() {
+	if (!selectedAdmin) return;
+
+	const instansiIdToSend = selectedInstansiId === '' || selectedInstansiId === null ? null : Number(selectedInstansiId);
+	console.log('Submitting assignment:', { adminId: selectedAdmin.id, instansiId: instansiIdToSend });
+
+	try {
+		const response = await fetch(`/api/users/${selectedAdmin.id}`, {
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				instansi_id: instansiIdToSend
+			}),
+		});
+
+		const result = await response.json();
+
+		if (result.success) {
+			toastStore.success('Penugasan admin berhasil diperbarui');
+			showAssignModal = false;
+			selectedAdmin = null;
+			selectedInstansiId = '';
+			
+			// Reload data
+			const resUsers = await fetch('/api/users');
+			const dataUsers = await resUsers.json();
+			if (dataUsers.success) {
+				admins = dataUsers.data.filter((u: any) => u.role === 'admin');
+				console.log('Reloaded admins:', admins);
+			}
+		} else {
+			toastStore.error(result.message || 'Gagal memperbarui penugasan');
+		}
+	} catch (err) {
+		console.error('Error assigning admin:', err);
+		toastStore.error('Terjadi kesalahan saat memperbarui penugasan');
+	}
+}
+
+function closeModal() {
+	showAssignModal = false;
+	selectedAdmin = null;
+	selectedInstansiId = '';
 }
 
 function goToPage(page: number) {
 	if (page < 1 || page > totalPages) return;
 	currentPage = page;
 }
+
+$: paginatedAdmins = admins.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 </script>
 
 <svelte:head>
@@ -70,8 +128,8 @@ function goToPage(page: number) {
 	<div class="max-w-7xl mx-auto">
 		<div class="flex justify-between items-center mb-8">
 			<div>
-				<h1 class="text-3xl font-bold text-gray-900 mb-2">Penugasan Admin ke User/PIC</h1>
-				<p class="text-gray-600">Kelola penugasan admin ke user/pic dalam sistem PEN monitoring</p>
+				<h1 class="text-3xl font-bold text-gray-900 mb-2">Penugasan Admin ke Instansi</h1>
+				<p class="text-gray-600">Kelola penugasan admin ke instansi tertentu dalam sistem PEN monitoring</p>
 			</div>
 		</div>
 		{#if loading}
@@ -96,56 +154,172 @@ function goToPage(page: number) {
 					<table class="w-full">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User/PIC</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Saat Ini</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign Admin</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Admin</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Instansi Ditugaskan</th>
+								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
 							</tr>
 						</thead>
 						<tbody class="bg-white divide-y divide-gray-200">
-							{#each users.filter(u => u.role !== 'admin' && u.role !== 'super_admin').slice((currentPage-1)*pageSize, currentPage*pageSize) as user}
+							{#each paginatedAdmins as admin, index}
 								<tr class="hover:bg-gray-50">
-									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name} <span class="text-xs text-gray-400">({user.email})</span></td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{assignments.find(a => a.userId === user.id)?.adminName || '-'}</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm">
-										<select on:change={e => {
-											const target = e.target as HTMLSelectElement | null;
-											if (target && target.value) assignAdmin(user.id, +target.value);
-										}} class="border rounded p-1">
-											<option value="">Pilih Admin</option>
-											{#if admins && admins.length > 0}
-												{#each admins as admin (admin.id)}
-													{#if admin && admin.name}
-														<option value={admin.id}>{admin.name}</option>
-													{/if}
-												{/each}
-											{/if}
-										</select>
+									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+										{(currentPage - 1) * pageSize + index + 1}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										<div class="text-sm font-medium text-gray-900">{admin.name}</div>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										<div class="text-sm text-gray-500">{admin.email}</div>
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap">
+										{#if admin.nama_instansi}
+											<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+												{admin.nama_instansi}
+											</span>
+										{:else}
+											<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+												Belum Ditugaskan
+											</span>
+										{/if}
+									</td>
+									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+										<button
+											on:click={() => openAssignModal(admin)}
+											class="text-blue-600 hover:text-blue-900"
+										>
+											{admin.instansi_id ? 'Ubah Penugasan' : 'Tugaskan'}
+										</button>
 									</td>
 								</tr>
 							{/each}
+							{#if paginatedAdmins.length === 0}
+								<tr>
+									<td colspan="5" class="px-6 py-4 text-center text-gray-500">
+										Tidak ada admin yang tersedia
+									</td>
+								</tr>
+							{/if}
 						</tbody>
 					</table>
 				</div>
-				{#if users.filter(u => u.role !== 'admin' && u.role !== 'super_admin').length === 0}
-					<div class="text-center py-12">
-						<div class="text-gray-400 text-6xl mb-4">🧑‍💼</div>
-						<h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada user/pic</h3>
-						<p class="text-gray-500 mb-4">Tambah user/pic terlebih dahulu untuk melakukan penugasan admin</p>
-					</div>
-				{/if}
+
 				<!-- Pagination -->
 				{#if totalPages > 1}
-					<div class="flex justify-between items-center px-6 py-4 border-t bg-gray-50">
-						<button on:click={() => goToPage(currentPage-1)} class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" disabled={currentPage === 1}>&laquo; Prev</button>
-						<div class="space-x-1">
-							{#each Array(totalPages) as _, i}
-								<button on:click={() => goToPage(i+1)} class="px-3 py-1 rounded {currentPage === i+1 ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}">{i+1}</button>
-							{/each}
+					<div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+						<div class="flex-1 flex justify-between sm:hidden">
+							<button
+								on:click={() => goToPage(currentPage - 1)}
+								disabled={currentPage === 1}
+								class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+							>
+								Previous
+							</button>
+							<button
+								on:click={() => goToPage(currentPage + 1)}
+								disabled={currentPage === totalPages}
+								class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+							>
+								Next
+							</button>
 						</div>
-						<button on:click={() => goToPage(currentPage+1)} class="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50" disabled={currentPage === totalPages}>Next &raquo;</button>
+						<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+							<div>
+								<p class="text-sm text-gray-700">
+									Showing <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> to 
+									<span class="font-medium">{Math.min(currentPage * pageSize, admins.length)}</span> of 
+									<span class="font-medium">{admins.length}</span> results
+								</p>
+							</div>
+							<div>
+								<nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+									<button
+										on:click={() => goToPage(currentPage - 1)}
+										disabled={currentPage === 1}
+										class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+									>
+										Previous
+									</button>
+									{#each Array(totalPages) as _, i}
+										<button
+											on:click={() => goToPage(i + 1)}
+											class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium {currentPage === i + 1 ? 'text-blue-600 bg-blue-50' : 'text-gray-700 hover:bg-gray-50'}"
+										>
+											{i + 1}
+										</button>
+									{/each}
+									<button
+										on:click={() => goToPage(currentPage + 1)}
+										disabled={currentPage === totalPages}
+										class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+									>
+										Next
+									</button>
+								</nav>
+							</div>
+						</div>
 					</div>
 				{/if}
 			</div>
 		{/if}
 	</div>
 </div>
+
+<!-- Assignment Modal -->
+{#if showAssignModal && selectedAdmin}
+	<div 
+		class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-start justify-center pt-20" 
+		on:click={closeModal}
+		on:keydown={(e) => e.key === 'Escape' && closeModal()}
+		role="presentation"
+	>
+		<div 
+			class="relative p-6 border border-gray-200 w-full max-w-md shadow-xl rounded-lg bg-white" 
+			on:click|stopPropagation
+			on:keydown|stopPropagation={(e) => e.key === 'Escape' && closeModal()}
+			role="dialog"
+			tabindex="-1"
+			aria-modal="true"
+			aria-labelledby="modal-title"
+		>
+			<div>
+				<h3 id="modal-title" class="text-lg font-semibold leading-6 text-gray-900 mb-4">
+					Tugaskan Admin ke Instansi
+				</h3>
+				<div class="mb-6">
+					<p class="text-sm text-gray-600 mb-1">Admin: <span class="font-semibold">{selectedAdmin.name}</span></p>
+					<p class="text-sm text-gray-600 mb-4">Email: <span class="font-semibold">{selectedAdmin.email}</span></p>
+					
+					<label for="instansi-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Instansi</label>
+					<select
+						id="instansi-select"
+						bind:value={selectedInstansiId}
+						class="mt-1 block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-white"
+					>
+						<option value="">-- Tidak Ditugaskan --</option>
+						{#each instansiList as instansi}
+							<option value={instansi.id}>{instansi.namaInstansi}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="flex justify-end gap-3">
+					<button
+						type="button"
+						on:click|stopPropagation={closeModal}
+						class="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
+					>
+						Batal
+					</button>
+					<button
+						type="button"
+						on:click|stopPropagation={handleAssignSubmit}
+						class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					>
+						Simpan
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}

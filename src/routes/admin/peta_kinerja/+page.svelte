@@ -1,13 +1,14 @@
 <script lang="ts">
 import OrganizationalChart from '$lib/components/OrganizationalChart.svelte';
 import { onMount } from 'svelte';
+import { page } from '$app/stores';
 
 let orgData: Array<{ id: number; instansiId: number; namaInstansi: string; children?: any[] }> = [];
 let loading = false;
 let error = '';
+let instansiName = 'Kementerian Koperasi & UKM';
 
 function buildOrgDataFromPlans(plans: Array<Record<string, any>>) {
-	// Root node (misal: Kementerian Koperasi & UKM)
 	type OrgNode = {
 		id: number;
 		instansiId: number;
@@ -20,11 +21,11 @@ function buildOrgDataFromPlans(plans: Array<Record<string, any>>) {
 	let pilarId = 2;
 	let aksiId = 100;
 
-	// Root node
+	// Root node menggunakan nama instansi admin
 	const root: OrgNode = {
 		id: 1,
 		instansiId: 1,
-		namaInstansi: 'Kementerian Koperasi & UKM',
+		namaInstansi: instansiName,
 		children: []
 	};
 
@@ -61,7 +62,27 @@ async function loadActionPlans() {
 		loading = true;
 		error = '';
 		
-		const response = await fetch('/api/action-plans?limit=1000'); // Load more data for the chart
+		// Check if admin has instansi assignment
+		const instansiId = $page.data?.user?.instansi_id;
+		
+		// Fetch instansi name if assigned
+		if (instansiId) {
+			try {
+				const instansiResponse = await fetch(`/api/instansi/${instansiId}`);
+				const instansiResult = await instansiResponse.json();
+				if (instansiResult.success && instansiResult.data) {
+					instansiName = instansiResult.data.namaInstansi;
+				}
+			} catch (err) {
+				console.error('Error loading instansi name:', err);
+			}
+		}
+		
+		const endpoint = instansiId 
+			? `/api/action-plans/instansi/${instansiId}?limit=1000`
+			: '/api/action-plans?limit=1000';
+		
+		const response = await fetch(endpoint);
 		const result = await response.json();
 		
 		if (result.success) {

@@ -3,7 +3,7 @@
 	import AksiModal from '$lib/components/AksiModal.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { Edit, Trash2 } from 'lucide-svelte';
+	import { Edit, Trash2, TrendingUp, Target, CheckCircle, BarChart3, Download, ArrowLeft } from 'lucide-svelte';
 
 	// =====================================
 	// Types
@@ -20,15 +20,35 @@
 		bukti: string | null;
 		penjelasan: string | null;
 		created_at: string | null;
+		actionPlanPicId?: number;
+	};
+
+	type Statistics = {
+		totalTarget: number;
+		totalCapaian: number;
+		percentage: number;
+		onTrack: number;
+		behind: number;
+		completed: number;
 	};
 
 	// =====================================
 	// State
 	// =====================================
 	let progressData: ProgressItem[] = [];
+	let statistics: Statistics = {
+		totalTarget: 0,
+		totalCapaian: 0,
+		percentage: 0,
+		onTrack: 0,
+		behind: 0,
+		completed: 0
+	};
 	let isModalOpen = false;
 	let isEditMode = false;
 	let editingItem: ProgressItem | null = null;
+	let actionPlanName: string = '';
+	let pilarName: string = '';
 
 	let newFormData = {
 		pilar: '',
@@ -49,11 +69,11 @@
 	let instansiId: string | null = null;
 	
 	onMount(() => {
-		// Get actionPlanId from URL query parameter
+		// Get actionPlanId from URL query parameter (optional for filtering)
 		const urlParams = new URLSearchParams($page.url.search);
 		actionPlanId = urlParams.get('actionPlanId');
 
-		// Get instansiId from localStorage (as before)
+		// Get instansiId from localStorage
 		const userData = localStorage.getItem("user");
 		if (userData) {
 			try {
@@ -64,21 +84,19 @@
 			}
 		}
 
-		if (actionPlanId && instansiId) {
+		if (instansiId) {
 			fetchProgress(instansiId);
 		} else {
-			console.error("Action Plan ID atau Instansi ID tidak ditemukan");
+			console.error("Instansi ID tidak ditemukan");
 		}
 	});
 
 	// =====================================
 	// Fetch Data dari API
 	// =====================================
-	// Fetch Data dari API
-	// =====================================
 	async function fetchProgress(id: string) {
 		try {
-			const res = await fetch(`/api/action_plan_progress/${id}`);
+			const res = await fetch(`/api/action-plans/instansi/${id}`);
 			const json = await res.json();
 
 			if (!json.success) {
@@ -86,32 +104,81 @@
 				return;
 			}
 
-			// Filter data berdasarkan actionPlanId jika ada
-			let filteredData = json.data;
-			if (actionPlanId) {
-				filteredData = json.data.filter((item: any) => 
-					item.actionPlanPic?.actionPlansId?.toString() === actionPlanId
-				);
+			// Transform data from action-plans endpoint
+			const transformedData: ProgressItem[] = [];
+			
+			json.data.forEach((actionPlan: any) => {
+				// Each action plan might have multiple progresses
+				if (actionPlan.actionPlanProgresses && actionPlan.actionPlanProgresses.length > 0) {
+					actionPlan.actionPlanProgresses.forEach((progress: any) => {
+						transformedData.push({
+							id: progress.id,
+							pilar: actionPlan.namaPilar || '-',
+							kegiatan: actionPlan.namaKegiatan || '-',
+							target_value: progress.target ?? 0,
+							target_desc: '',
+							milestone: 'Belum Ada',
+							capaian_value: progress.capaian ?? 0,
+							capaian_desc: '',
+							bukti: progress.bukti,
+							penjelasan: progress.penjelasan,
+							created_at: progress.createdAt,
+							actionPlanPicId: progress.actionPlanPicId
+						});
+					});
+				}
+			});
+
+			progressData = transformedData;
+
+			// Set names for header (use first item or aggregate all)
+			if (progressData.length > 0) {
+				// Group by pilar to show in header
+				const pilars = [...new Set(progressData.map(item => item.pilar))];
+				pilarName = pilars.join(', ');
+				actionPlanName = progressData.length > 1 ? 'Multiple Activities' : progressData[0].kegiatan;
 			}
 
-			progressData = filteredData.map((item: any) => ({
-				id: item.id,
-				pilar: item.pilar?.nama_pilar || '-',
-				kegiatan: item.kegiatan?.namaKegiatan || '-',
-
-				target_value: item.target ?? 0,
-				target_desc: '',
-
-				milestone: 'Belum Ada',
-				capaian_value: item.capaian ?? 0,
-				capaian_desc: '',
-				bukti: item.bukti,
-				penjelasan: item.penjelasan,
-				created_at: item.createdAt
-			}));
+			// Calculate statistics
+			calculateStatistics();
 		} catch (err) {
 			console.error("Error fetching progress:", err);
 		}
+	}
+
+	// =====================================
+	// Calculate Statistics
+	// =====================================
+	function calculateStatistics() {
+		let totalTarget = 0;
+		let totalCapaian = 0;
+		let onTrack = 0;
+		let behind = 0;
+		let completed = 0;
+
+		progressData.forEach(item => {
+			totalTarget += item.target_value;
+			totalCapaian += item.capaian_value;
+
+			const percentage = item.target_value > 0 ? (item.capaian_value / item.target_value) * 100 : 0;
+			
+			if (percentage >= 100) {
+				completed++;
+			} else if (percentage >= 70) {
+				onTrack++;
+			} else {
+				behind++;
+			}
+		});
+
+		statistics = {
+			totalTarget,
+			totalCapaian,
+			percentage: totalTarget > 0 ? Math.round((totalCapaian / totalTarget) * 100) : 0,
+			onTrack,
+			behind,
+			completed
+		};
 	}
 
 	// =====================================
@@ -173,14 +240,14 @@
 		try {
 			const updateData = {
 				id: editingItem.id,
-				actionPlanPicId: editingItem.id, // This should be the actual actionPlanPicId
+				actionPlanPicId: editingItem.actionPlanPicId || editingItem.id,
 				target: parseInt(newFormData.target_value) || 0,
 				capaian: parseInt(newFormData.capaian_value) || 0,
 				bukti: newFormData.bukti,
 				penjelasan: newFormData.penjelasan,
 			};
 
-			const res = await fetch(`/api/action_plan_progress/${instansiId}?id=${editingItem.id}`, {
+			const res = await fetch(`/api/action_plan_progress?id=${editingItem.id}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -202,6 +269,7 @@
 						}
 						: item
 				);
+				calculateStatistics();
 				isModalOpen = false;
 				resetForm();
 			} else {
@@ -223,7 +291,7 @@
 		}
 
 		try {
-			const res = await fetch(`/api/action_plan_progress/${instansiId}?id=${item.id}`, {
+			const res = await fetch(`/api/action_plan_progress?id=${item.id}`, {
 				method: 'DELETE',
 			});
 
@@ -232,6 +300,7 @@
 			if (json.success) {
 				// Remove from local data
 				progressData = progressData.filter(p => p.id !== item.id);
+				calculateStatistics();
 			} else {
 				console.error("Gagal delete progress:", json.error);
 			}
@@ -260,96 +329,230 @@
 	}
 </script>
 
-<main class="p-6 space-y-6">
-	<div class="flex justify-between items-center">
-		<h1 class="text-2xl font-bold">Progress PEN 2025</h1>
-	</div>
-
-	<!-- Progress Table -->
-	<div class="overflow-x-auto bg-white rounded-lg shadow">
-		<table class="min-w-full divide-y divide-gray-200">
-			<thead class="bg-gray-50">
-				<tr>
-					<th class="px-6 py-3">Pilar</th>
-					<th class="px-6 py-3">Kegiatan/Aksi</th>
-					<th class="px-6 py-3">Target</th>
-					<th class="px-6 py-3">Milestone</th>
-					<th class="px-6 py-3">Capaian</th>
-					<th class="px-6 py-3">Bukti</th>
-					<th class="px-6 py-3">Penjelasan</th>
-					<th class="px-6 py-3">Aksi</th>
-				</tr>
-			</thead>
-
-			<tbody class="bg-white divide-y divide-gray-200">
-				{#each progressData as item}
-					<tr class="hover:bg-gray-50">
-						<td class="px-6 py-4">{item.pilar}</td>
-						<td class="px-6 py-4">{item.kegiatan}</td>
-
-						<td class="px-6 py-4">
-							<div class="font-semibold text-blue-600">{item.target_value}</div>
-						</td>
-
-						<td class="px-6 py-4">
-							<span class="inline-flex px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-								{item.milestone}
-							</span>
-						</td>
-
-						<td class="px-6 py-4">
-							<div class="font-semibold text-green-600">{item.capaian_value}</div>
-
-							<div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-								<div
-									class="bg-green-600 h-2 rounded-full"
-									style="width: {item.target_value > 0
-										? (item.capaian_value / item.target_value) * 100
-										: 0}%"
-								></div>
-							</div>
-						</td>
-
-						<td class="px-6 py-4">
-							{#if item.bukti}
-								<a class="text-blue-600 underline" href={item.bukti} target="_blank">Lihat</a>
-							{:else}
-								-
-							{/if}
-						</td>
-
-						<td class="px-6 py-4 max-w-xs truncate" title={item.penjelasan}>
-							{item.penjelasan || '-'}
-						</td>
-
-						<td class="px-6 py-4">
-							<div class="flex space-x-2">
-								<button
-									on:click={() => handleEdit(item)}
-									class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-									title="Edit"
-								>
-									<Edit size={16} />
-								</button>
-								<button
-									on:click={() => handleDelete(item)}
-									class="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-									title="Delete"
-								>
-									<Trash2 size={16} />
-								</button>
-							</div>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
-
-		{#if progressData.length === 0}
-			<div class="text-center py-12 text-gray-500">
-				Belum ada data progress
+<main class="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
+	<div class="max-w-7xl mx-auto space-y-6">
+		<!-- Header -->
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-4">
+				<a
+					href="/user/progress_pen"
+					class="p-2 hover:bg-white rounded-lg transition-colors"
+					title="Kembali"
+				>
+					<ArrowLeft size={24} class="text-gray-600" />
+				</a>
+				<div>
+					<h1 class="text-3xl font-bold text-gray-900">Dashboard Progress</h1>
+					<p class="text-gray-600 mt-1">{pilarName} - {actionPlanName}</p>
+				</div>
 			</div>
-		{/if}
+			<button
+				on:click={() => window.print()}
+				class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<Download size={18} />
+				<span>Export</span>
+			</button>
+		</div>
+
+		<!-- Statistics Cards -->
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+			<!-- Total Target -->
+			<div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-gray-600 text-sm font-medium">Total Target</p>
+						<p class="text-3xl font-bold text-blue-600 mt-2">{statistics.totalTarget}</p>
+					</div>
+					<div class="p-3 bg-blue-100 rounded-full">
+						<Target size={24} class="text-blue-600" />
+					</div>
+				</div>
+			</div>
+
+			<!-- Total Capaian -->
+			<div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-gray-600 text-sm font-medium">Total Capaian</p>
+						<p class="text-3xl font-bold text-green-600 mt-2">{statistics.totalCapaian}</p>
+					</div>
+					<div class="p-3 bg-green-100 rounded-full">
+						<TrendingUp size={24} class="text-green-600" />
+					</div>
+				</div>
+			</div>
+
+			<!-- Persentase -->
+			<div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-gray-600 text-sm font-medium">Persentase Capaian</p>
+						<p class="text-3xl font-bold text-purple-600 mt-2">{statistics.percentage}%</p>
+					</div>
+					<div class="p-3 bg-purple-100 rounded-full">
+						<BarChart3 size={24} class="text-purple-600" />
+					</div>
+				</div>
+			</div>
+
+			<!-- Completed -->
+			<div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-emerald-500">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-gray-600 text-sm font-medium">Selesai / Total</p>
+						<p class="text-3xl font-bold text-emerald-600 mt-2">{statistics.completed}/{progressData.length}</p>
+					</div>
+					<div class="p-3 bg-emerald-100 rounded-full">
+						<CheckCircle size={24} class="text-emerald-600" />
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Overall Progress Bar -->
+		<div class="bg-white rounded-xl shadow-lg p-6">
+			<h3 class="text-lg font-semibold text-gray-900 mb-4">Progress Keseluruhan</h3>
+			<div class="space-y-3">
+				<div class="flex justify-between text-sm text-gray-600">
+					<span>Target: {statistics.totalTarget}</span>
+					<span>Capaian: {statistics.totalCapaian} ({statistics.percentage}%)</span>
+				</div>
+				<div class="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+					<div
+						class="h-6 rounded-full bg-linear-to-r from-blue-500 to-green-500 transition-all duration-500 flex items-center justify-end pr-3"
+						style="width: {statistics.percentage}%"
+					>
+						<span class="text-white text-xs font-bold">{statistics.percentage}%</span>
+					</div>
+				</div>
+				<div class="flex gap-4 pt-2">
+					<div class="flex items-center gap-2">
+						<div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+						<span class="text-sm text-gray-600">Selesai: {statistics.completed}</span>
+					</div>
+					<div class="flex items-center gap-2">
+						<div class="w-3 h-3 rounded-full bg-blue-500"></div>
+						<span class="text-sm text-gray-600">On Track: {statistics.onTrack}</span>
+					</div>
+					<div class="flex items-center gap-2">
+						<div class="w-3 h-3 rounded-full bg-orange-500"></div>
+						<span class="text-sm text-gray-600">Tertunda: {statistics.behind}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Detail Progress per Item -->
+		<div class="bg-white rounded-xl shadow-lg p-6">
+			<h3 class="text-lg font-semibold text-gray-900 mb-6">Detail Progress per Kegiatan</h3>
+			
+			{#if progressData.length === 0}
+				<div class="text-center py-12">
+					<div class="text-gray-400 mb-4">
+						<BarChart3 size={48} class="mx-auto" />
+					</div>
+					<p class="text-gray-500">Belum ada data progress untuk ditampilkan</p>
+				</div>
+			{:else}
+				<div class="space-y-6">
+					{#each progressData as item, index}
+						{@const percentage = item.target_value > 0 ? Math.round((item.capaian_value / item.target_value) * 100) : 0}
+						{@const status = percentage >= 100 ? 'completed' : percentage >= 70 ? 'on-track' : 'behind'}
+						
+						<div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+							<!-- Header -->
+							<div class="flex items-start justify-between mb-4">
+								<div class="flex-1">
+									<div class="flex items-center gap-3 mb-2">
+										<span class="text-2xl font-bold text-gray-300">#{index + 1}</span>
+										<div>
+											<h4 class="font-semibold text-gray-900">{item.kegiatan}</h4>
+											<p class="text-sm text-gray-500">{item.pilar}</p>
+										</div>
+									</div>
+									{#if item.penjelasan}
+										<p class="text-sm text-gray-600 mt-2">{item.penjelasan}</p>
+									{/if}
+								</div>
+								<div class="flex gap-2">
+									<button
+										on:click={() => handleEdit(item)}
+										class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+										title="Edit"
+									>
+										<Edit size={18} />
+									</button>
+									<button
+										on:click={() => handleDelete(item)}
+										class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+										title="Hapus"
+									>
+										<Trash2 size={18} />
+									</button>
+								</div>
+							</div>
+
+							<!-- Progress -->
+							<div class="space-y-3">
+								<div class="flex items-center justify-between text-sm">
+									<span class="text-gray-600">Target: <span class="font-semibold text-blue-600">{item.target_value}</span></span>
+									<span class="text-gray-600">Capaian: <span class="font-semibold text-green-600">{item.capaian_value}</span></span>
+									<span class="font-semibold {
+										status === 'completed' ? 'text-emerald-600' :
+										status === 'on-track' ? 'text-blue-600' :
+										'text-orange-600'
+									}">{percentage}%</span>
+								</div>
+								
+								<div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+									<div
+										class="h-4 rounded-full transition-all duration-500 {
+											status === 'completed' ? 'bg-emerald-500' :
+											status === 'on-track' ? 'bg-blue-500' :
+											'bg-orange-500'
+										}"
+										style="width: {Math.min(percentage, 100)}%"
+									></div>
+								</div>
+
+								<!-- Status Badge -->
+								<div class="flex items-center gap-3">
+									<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {
+										status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
+										status === 'on-track' ? 'bg-blue-100 text-blue-700' :
+										'bg-orange-100 text-orange-700'
+									}">
+										{status === 'completed' ? '✓ Selesai' :
+										status === 'on-track' ? '→ On Track' :
+										'⚠ Tertunda'}
+									</span>
+									{#if item.milestone}
+										<span class="text-xs text-gray-500">Milestone: {item.milestone}</span>
+									{/if}
+									{#if item.created_at}
+										<span class="text-xs text-gray-500">Update: {new Date(item.created_at).toLocaleDateString('id-ID')}</span>
+									{/if}
+								</div>
+
+								<!-- Bukti -->
+								{#if item.bukti}
+									<div class="pt-2 border-t border-gray-100">
+										<a
+											href={item.bukti}
+											target="_blank"
+											class="text-sm text-blue-600 hover:text-blue-700 underline"
+										>
+											📎 Lihat Bukti/Dokumentasi
+										</a>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
 	</div>
 
 	<AksiModal
@@ -363,3 +566,11 @@
 		isEdit={isEditMode}
 	/>
 </main>
+
+<style>
+	@media print {
+		button {
+			display: none !important;
+		}
+	}
+</style>

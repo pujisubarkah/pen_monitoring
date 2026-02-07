@@ -205,17 +205,14 @@
 		if (!editingItem) return;
 		try {
 			const payload = {
-				pilar: newFormData.pilar,
-				kegiatan: newFormData.kegiatan,
-				target_value: parseInt(newFormData.target_value) || 0,
-				target_desc: newFormData.target_desc,
-				milestone: newFormData.milestone,
-				capaian_value: parseInt(newFormData.capaian_value) || 0,
-				capaian_desc: newFormData.capaian_desc,
+				id: editingItem.id,
+				actionPlanPicId: editingItem.actionPlanPicId,
+				target: parseInt(newFormData.target_value) || 0,
+				capaian: parseInt(newFormData.capaian_value) || 0,
 				bukti: newFormData.bukti,
 				penjelasan: newFormData.penjelasan
 			};
-			const res = await fetch(`/api/action_plan_progress/${editingItem.id}`, {
+			const res = await fetch(`/api/action_plan_progress?id=${editingItem.id}`, {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(payload)
@@ -241,7 +238,7 @@
 	async function handleDelete(item: ProgressItem) {
 		if (confirm('Apakah Anda yakin ingin menghapus progress ini?')) {
 			try {
-				const res = await fetch(`/api/action_plan_progress/${item.id}`, {
+				const res = await fetch(`/api/action_plan_progress?id=${item.id}`, {
 					method: 'DELETE'
 				});
 				const json = await res.json();

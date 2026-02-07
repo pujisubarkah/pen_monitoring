@@ -110,6 +110,11 @@ export const PUT: RequestHandler = async ({ request, params }) => {
       updateData.role = body.role;
     }
 
+    // Update instansi_id if provided (including null to remove assignment)
+    if ('instansi_id' in body) {
+      updateData.instansi_id = body.instansi_id;
+    }
+
     // Update is_verified if provided
     let willBeVerified = wasVerified;
     if (typeof body.is_verified === 'boolean') {
