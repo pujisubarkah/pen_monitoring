@@ -159,34 +159,51 @@
 	<title>Master Instansi - Admin Panel</title>
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8">
-	<div class="max-w-7xl mx-auto">
-		<!-- Header -->
-		<div class="flex justify-between items-center mb-8">
-			<div>
-				<h1 class="text-3xl font-bold text-gray-900 mb-2">Master Instansi</h1>
-				<p class="text-gray-600">Kelola data master instansi dalam sistem PEN monitoring</p>
+<div class="bg-white min-h-screen">
+	<div class="container mx-auto px-4 py-8">
+		<div class="max-w-7xl mx-auto">
+			<!-- Header with enhanced design -->
+			<div class="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
+				<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+					<div class="flex items-center gap-4">
+						<div class="p-3 bg-linear-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg">
+							<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+							</svg>
+						</div>
+						<div>
+							<h1 class="text-4xl font-bold bg-linear-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent mb-2">Master Instansi</h1>
+							<p class="text-gray-600 text-lg">Kelola data master instansi dalam sistem PEN monitoring</p>
+						</div>
+					</div>
+					<button
+						on:click={openAddModal}
+						class="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl font-semibold inline-flex items-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+					>
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+						</svg>
+						<span>Tambah Instansi</span>
+					</button>
+				</div>
 			</div>
-			<button
-				on:click={openAddModal}
-				class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2"
-			>
-				<span>+</span>
-				<span>Tambah Instansi</span>
-			</button>
 		</div>
 
-		<!-- Error Message -->
+		<!-- Error Message with enhanced design -->
 		{#if $error}
-			<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-				<div class="flex items-center">
-					<div class="text-red-500 text-xl mr-3">⚠️</div>
-					<div>
-						<h3 class="text-red-800 font-semibold">Terjadi Kesalahan</h3>
-						<p class="text-red-600">{$error}</p>
+			<div class="bg-linear-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl p-6 mb-8 shadow-lg">
+				<div class="flex items-center gap-4">
+					<div class="p-3 bg-red-100 rounded-full">
+						<svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<h3 class="text-red-800 font-bold text-lg mb-1">Terjadi Kesalahan</h3>
+						<p class="text-red-700 mb-4">{$error}</p>
 						<button
 							on:click={loadInstansi}
-							class="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+							class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
 						>
 							Coba Lagi
 						</button>
@@ -195,54 +212,97 @@
 			</div>
 		{/if}
 
-		<!-- Loading State -->
+		<!-- Loading State with enhanced design -->
 		{#if $loading}
-			<div class="flex items-center justify-center py-12">
-				<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-				<span class="ml-3 text-gray-600">Memuat data instansi...</span>
+			<div class="bg-white rounded-2xl shadow-xl p-12 mb-8 border border-gray-100">
+				<div class="flex flex-col items-center justify-center">
+					<div class="relative">
+						<div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600"></div>
+						<div class="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin animation-delay-75"></div>
+					</div>
+					<span class="mt-6 text-gray-600 font-medium text-lg">Memuat data instansi...</span>
+					<div class="mt-4 flex space-x-1">
+						<div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+						<div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce animation-delay-100"></div>
+						<div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce animation-delay-200"></div>
+					</div>
+				</div>
 			</div>
 		{:else}
-			<!-- Instansi Table -->
-			<div class="bg-white rounded-lg shadow-md overflow-hidden">
+			<!-- Instansi Table with enhanced design -->
+			<div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+				<div class="bg-linear-to-r from-blue-600 to-indigo-600 p-6">
+					<h3 class="text-white text-xl font-bold flex items-center gap-3">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+						</svg>
+						Daftar Instansi ({$instansiList.length})
+					</h3>
+				</div>
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead class="bg-gray-50">
 							<tr>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									ID
+								<th class="px-8 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+									<div class="flex items-center gap-2">
+										<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+										</svg>
+										ID Instansi
+									</div>
 								</th>
-								<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Nama Instansi
+								<th class="px-8 py-4 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+									<div class="flex items-center gap-2">
+										<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+										</svg>
+										Nama Instansi
+									</div>
 								</th>
-								<th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-									Aksi
+								<th class="px-8 py-4 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">
+									<div class="flex items-center justify-end gap-2">
+										<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+										</svg>
+										Aksi
+									</div>
 								</th>
 							</tr>
 						</thead>
-						<tbody class="bg-white divide-y divide-gray-200">
-							{#each $instansiList as instansi}
-								<tr class="hover:bg-gray-50">
-									<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-										{instansi.instansiId}
+						<tbody class="bg-white divide-y divide-gray-100">
+							{#each $instansiList as instansi, index}
+								<tr class="hover:bg-linear-to-r hover:from-blue-50 hover:to-indigo-50 transition-colors duration-200">
+									<td class="px-8 py-6 whitespace-nowrap">
+										<div class="flex items-center">
+											<div class="shrink-0 w-10 h-10 bg-linear-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+												<span class="text-white font-bold text-sm">{instansi.instansiId}</span>
+											</div>
+											<div class="ml-4">
+												<div class="text-sm font-semibold text-gray-900">{instansi.instansiId}</div>
+												<div class="text-sm text-gray-500">ID Instansi</div>
+											</div>
+										</div>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										{instansi.namaInstansi}
+									<td class="px-8 py-6 whitespace-nowrap">
+										<div class="text-sm font-medium text-gray-900">{instansi.namaInstansi}</div>
+										<div class="text-sm text-gray-500">Instansi #{index + 1}</div>
 									</td>
-									<td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-										<div class="flex justify-end gap-2">
+									<td class="px-8 py-6 whitespace-nowrap text-right text-sm font-medium">
+										<div class="flex justify-end gap-3">
 											<button
 												on:click={() => openEditModal(instansi)}
-												class="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
+												class="bg-blue-50 hover:bg-blue-100 text-blue-600 p-2 rounded-lg hover:shadow-md transition-all duration-200 transform hover:scale-110"
 												title="Edit Instansi"
 											>
-												<Edit size={16} />
+												<Edit size={18} />
 											</button>
 											<button
 												on:click={() => deleteInstansi(instansi)}
-												class="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
+												class="bg-red-50 hover:bg-red-100 text-red-600 p-2 rounded-lg hover:shadow-md transition-all duration-200 transform hover:scale-110"
 												title="Hapus Instansi"
 											>
-												<Trash2 size={16} />
+												<Trash2 size={18} />
 											</button>
 										</div>
 									</td>
@@ -252,16 +312,28 @@
 					</table>
 				</div>
 
-				<!-- Empty State -->
+				<!-- Empty State with enhanced design -->
 				{#if $instansiList.length === 0}
-					<div class="text-center py-12">
-						<div class="text-gray-400 text-6xl mb-4">🏢</div>
-						<h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada data instansi</h3>
-						<p class="text-gray-500 mb-4">Tambahkan instansi pertama untuk memulai</p>
+					<div class="text-center py-16 px-8">
+						<div class="relative mb-8">
+							<div class="w-24 h-24 bg-linear-to-r from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+								<svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+								</svg>
+							</div>
+							<div class="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
+								<span class="text-white text-sm font-bold">+</span>
+							</div>
+						</div>
+						<h3 class="text-2xl font-bold text-gray-900 mb-3">Belum ada data instansi</h3>
+						<p class="text-gray-500 mb-8 text-lg max-w-md mx-auto">Tambahkan instansi pertama untuk memulai mengelola data master instansi dalam sistem</p>
 						<button
 							on:click={openAddModal}
-							class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+							class="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 inline-flex items-center gap-3"
 						>
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+							</svg>
 							Tambah Instansi Pertama
 						</button>
 					</div>
@@ -271,10 +343,22 @@
 	</div>
 </div>
 
-<!-- Modal -->
+<style>
+	.animation-delay-75 {
+		animation-delay: 0.075s;
+	}
+	.animation-delay-100 {
+		animation-delay: 0.1s;
+	}
+	.animation-delay-200 {
+		animation-delay: 0.2s;
+	}
+</style>
+
+<!-- Enhanced Modal -->
 {#if $showModal}
 	<div
-		class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+		class="fixed inset-0 bg-gray-900 bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
 		on:click={closeModal}
 		on:keydown={(e) => { if (e.key === 'Escape') closeModal(); }}
 		role="dialog"
@@ -283,7 +367,7 @@
 		aria-labelledby="modal-title"
 	>
 		<div
-			class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+			class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-100"
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="modal-title"
@@ -291,53 +375,81 @@
 			on:click|stopPropagation
 			on:keydown|stopPropagation
 		>
-			<div class="mt-3">
-				<h3 id="modal-title" class="text-lg font-medium text-gray-900 mb-4">
-					{$modalMode === 'add' ? 'Tambah Instansi' : 'Edit Instansi'}
-				</h3>
+			<!-- Modal Header -->
+			<div class="bg-linear-to-r from-blue-600 to-indigo-600 p-6 rounded-t-3xl">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<div class="p-2 bg-white bg-opacity-20 rounded-xl">
+							<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+							</svg>
+						</div>
+						<h3 id="modal-title" class="text-xl font-bold text-white">
+							{$modalMode === 'add' ? 'Tambah Instansi Baru' : 'Edit Instansi'}
+						</h3>
+					</div>
+					<button
+						on:click={closeModal}
+						class="p-2 hover:bg-white hover:bg-opacity-20 rounded-xl transition-colors duration-200"
+						aria-label="Tutup modal"
+					>
+						<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+			</div>
 
-				<form on:submit|preventDefault={saveInstansi} class="space-y-4">
+			<!-- Modal Body -->
+			<div class="p-6">
+				<form on:submit|preventDefault={saveInstansi} class="space-y-6">
 					<div>
-						<label for="instansiId" class="block text-sm font-medium text-gray-700 mb-1">
-							ID Instansi
+						<label for="instansiId" class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+							<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+							</svg>
+							ID Instansi <span class="text-red-500">*</span>
 						</label>
 						<input
 							id="instansiId"
 							type="number"
 							bind:value={$formData.instansiId}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
 							placeholder="Masukkan ID instansi"
 							required
 						/>
 					</div>
 
 					<div>
-						<label for="namaInstansi" class="block text-sm font-medium text-gray-700 mb-1">
-							Nama Instansi
+						<label for="namaInstansi" class="text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+							<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+							</svg>
+							Nama Instansi <span class="text-red-500">*</span>
 						</label>
 						<input
 							id="namaInstansi"
 							type="text"
 							bind:value={$formData.namaInstansi}
-							class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-gray-900 placeholder-gray-400"
 							placeholder="Masukkan nama instansi"
 							required
 						/>
 					</div>
 
-					<div class="flex justify-end gap-3 mt-6">
+					<div class="flex justify-end gap-4 pt-4 border-t border-gray-100">
 						<button
 							type="button"
 							on:click={closeModal}
-							class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+							class="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-all duration-200"
 						>
 							Batal
 						</button>
 						<button
 							type="submit"
-							class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+							class="px-6 py-3 text-sm font-semibold text-white bg-linear-to-r from-blue-600 to-indigo-600 border border-transparent rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200"
 						>
-							{$modalMode === 'add' ? 'Tambah' : 'Update'}
+							{$modalMode === 'add' ? 'Tambah Instansi' : 'Update Instansi'}
 						</button>
 					</div>
 				</form>

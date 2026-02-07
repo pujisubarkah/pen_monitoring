@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { writable } from 'svelte/store';
-    import StatCard from '$lib/components/cards/StatCard.svelte';
 
     export const superAdminInfo = writable({ superAdminName: '' });
 
@@ -65,12 +64,17 @@
     <title>Dashboard Super Admin</title>
 </svelte:head>
 
-<div class="w-full md:w-1/2">
+<div class="w-full md:w-1/2 mx-auto">
     <h2 class="text-2xl font-bold text-primary mb-4">Tentang Koperasi Desa/Kelurahan Merah Putih</h2>
-    <p class="text-gray-600 text-justify">Undang-Undang 1945 Pasal 33 menegaskan bahwa perekonomian Indonesia disusun atas usaha bersama yang didasarkan pada asas kekeluargaan. Presiden Republik Indonesia sangat mendukung segala upaya untuk menggerakkan koperasi di seluruh Indonesia, mencerminkan komitmen pemerintah dalam memperkuat ekonomi kerakyatan.</p>
+    <p class="text-gray-600 text-justify mt-2">Undang-Undang 1945 Pasal 33 menegaskan bahwa perekonomian Indonesia disusun atas usaha bersama yang didasarkan pada asas kekeluargaan. Presiden Republik Indonesia sangat mendukung segala upaya untuk menggerakkan koperasi di seluruh Indonesia, mencerminkan komitmen pemerintah dalam memperkuat ekonomi kerakyatan.</p>
     <p class="text-gray-600 text-justify mt-4">Pembentukan Koperasi Desa/Kelurahan Merah Putih didorong oleh kebutuhan untuk meningkatkan kesejahteraan ekonomi masyarakat desa melalui pendekatan ekonomi kerakyatan yang berbasis pada prinsip gotong royong, kekeluargaan, dan saling membantu.</p>
     <p class="text-gray-600 text-justify mt-4">Dalam retreat kepala daerah di Akmil Magelang pada 21-28 Februari 2025, Presiden Prabowo menekankan pentingnya pembentukan Koperasi Desa sebagai upaya untuk meningkatkan ketahanan pangan.</p>
     <p class="text-gray-600 text-justify mt-4">Pada Rapat Terbatas di Istana Negara pada 3 Maret 2025, Presiden RI mengumumkan peluncuran 80.000 koperasi desa dengan nama Koperasi Desa/Kelurahan Merah Putih, dan akan dilakukan launching Koperasi Desa/Kelurahan Merah Putih bertepatan pada Hari Koperasi Nasional pada 12 Juli 2025. Inisiatif ini bertujuan untuk memperkuat ekonomi desa dan meningkatkan kesejahteraan masyarakat melalui koperasi.</p>
+</div>
+
+<div class="flex flex-col items-center gap-8 mt-12">
+    <h2 class="text-center text-xl font-bold text-[#065366]">Satuan Tugas Koperasi Desa/Kelurahan Merah Putih</h2>
+    <img loading="lazy" src="https://simkopdes.go.id/images/logo-kementerian/gabungan2.png" alt="Logo-logo Mitra" class="w-full h-auto object-contain">
 </div>
 
 <style>

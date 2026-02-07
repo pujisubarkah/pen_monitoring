@@ -67,6 +67,15 @@ export async function findUserById(id: number): Promise<User | null> {
 	return result[0] || null;
 }
 
+export async function updateUserPassword(id: number, hashedPassword: string): Promise<boolean> {
+	try {
+		await db.update(users).set({ password: hashedPassword }).where(eq(users.id, id));
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 // Instansi functions
 export async function getAllInstansi(): Promise<Instansi[]> {
 	const result = await db.select().from(instansi).orderBy(instansi.namaInstansi);

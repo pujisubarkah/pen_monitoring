@@ -15,7 +15,8 @@
 		{ name: 'Master Instansi', path: `/super_admin/master_instansi`, icon: '🏢' },
 		{ name: 'Master Pilar', path: `/super_admin/master_pilar`, icon: '🏗️' },
 		{ name: 'Rencana Aksi', path: `/super_admin/rencana_aksi`, icon: '📋' },
-		{ name: 'Penugasan Admin', path: `/super_admin/penugasan_admin`, icon: '🧑‍💼' }
+		{ name: 'Penugasan Admin', path: `/super_admin/penugasan_admin`, icon: '🧑‍💼' },
+		{ name: 'Laporan', path: `/super_admin/laporan`, icon: '📄' }
 	];
     
 	const menuAdmin = [

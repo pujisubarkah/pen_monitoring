@@ -27,71 +27,73 @@ async function exportToPDF() {
 
 	type ProgressItem = {
 		id: string;
+		actionPlanId?: number;
 		no: number;
 		aksi: string;
 		pic: string;
+		picId?: number;
 		indikator: string;
 		tanggalUpdate: string;
 		persentase: number;
 	};
 
+	type PICItem = {
+		id: number;
+		namaInstansi: string;
+	};
+
 	let progressData: ProgressItem[] = [];
 	let loading = false;
 	let error = '';
+	let summary = {
+		total: 0,
+		completed: 0,
+		inProgress: 0,
+		notStarted: 0
+	};
+	let pagination = {
+		page: 1,
+		limit: 10,
+		total: 0,
+		totalPages: 0
+	};
+	let picList: PICItem[] = [];
+	let selectedPIC = '';
+
+	async function loadPICList() {
+		try {
+			const response = await fetch('/api/instansi');
+			const result = await response.json();
+			if (result.success) {
+				picList = result.data;
+			}
+		} catch (err) {
+			console.error('Error loading PIC list:', err);
+		}
+	}
 
 	async function loadProgressData() {
 		try {
 			loading = true;
 			error = '';
 
-			const response = await fetch('/api/action-plans?limit=all');
+			const params = new URLSearchParams({
+				page: pagination.page.toString(),
+				limit: pagination.limit.toString()
+			});
+
+			if (selectedPIC) {
+				params.append('picId', selectedPIC);
+			}
+
+			const response = await fetch(`/api/reports/action-plans-summary?${params}`);
 			const result = await response.json();
 
 			if (result.success) {
-				// Transform API data to match ProgressTable format
-				progressData = result.data.map((plan: any, index: number) => {
-					// Calculate average progress from all progress entries
-					let totalCapaian = 0;
-					let progressCount = 0;
-
-					if (plan.actionPlanProgresses && plan.actionPlanProgresses.length > 0) {
-						plan.actionPlanProgresses.forEach((progress: any) => {
-							totalCapaian += progress.capaian || 0;
-							progressCount++;
-						});
-					}
-
-					const averageProgress = progressCount > 0 ? Math.round(totalCapaian / progressCount) : 0;
-
-					// Get latest update date
-					let latestUpdate = plan.updatedAt || plan.createdAt;
-					if (plan.actionPlanProgresses && plan.actionPlanProgresses.length > 0) {
-						const progressDates = plan.actionPlanProgresses
-							.map((p: any) => p.createdAt)
-							.filter(Boolean)
-							.sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime());
-						if (progressDates.length > 0) {
-							latestUpdate = progressDates[0];
-						}
-					}
-
-					// Get indikator from indikatorKeberhasilanDetails
-					const indikator = plan.indikatorKeberhasilanDetails?.[0]?.deskripsi || 
-						'Indikator belum ditentukan';
-
-					// Get PIC names from actionPlanPics
-					const picNames = plan.actionPlanPics?.map((pic: any) => pic.namaInstansi).filter(Boolean).join(', ') || 'Belum ditentukan';
-
-					return {
-						id: plan.id.toString(),
-						no: index + 1,
-						aksi: plan.namaKegiatan || 'Nama kegiatan tidak tersedia',
-						pic: picNames,
-						indikator: indikator,
-						tanggalUpdate: latestUpdate,
-						persentase: averageProgress
-					};
-				});
+				// Data already pre-calculated from server
+				progressData = result.data;
+				summary = result.summary;
+				pagination = result.pagination;
 			} else {
 				error = result.error || 'Failed to load progress data';
 				console.error('Failed to load progress data:', result.error);
@@ -104,7 +106,18 @@ async function exportToPDF() {
 		}
 	}
 
+	function handlePageChange(newPage: number) {
+		pagination.page = newPage;
+		loadProgressData();
+	}
+
+	function handlePICFilterChange() {
+		pagination.page = 1; // Reset to first page when filter changes
+		loadProgressData();
+	}
+
 	onMount(() => {
+		loadPICList();
 		loadProgressData();
 	});
 
@@ -227,7 +240,7 @@ async function exportToPDF() {
 						</div>
 						<div class="ml-4">
 							<h3 class="text-lg font-semibold text-gray-900">Total Aksi</h3>
-							<p class="text-3xl font-bold text-blue-600">{progressData.length || sampleData.length}</p>
+							<p class="text-3xl font-bold text-blue-600">{progressData.length > 0 ? summary.total : sampleData.length}</p>
 						</div>
 					</div>
 				</div>
@@ -240,7 +253,7 @@ async function exportToPDF() {
 						<div class="ml-4">
 							<h3 class="text-lg font-semibold text-gray-900">Selesai</h3>
 							<p class="text-3xl font-bold text-green-600">
-								{(progressData.length > 0 ? progressData : sampleData).filter(item => item.persentase === 100).length}
+								{progressData.length > 0 ? summary.completed : sampleData.filter(item => item.persentase === 100).length}
 							</p>
 						</div>
 					</div>
@@ -254,7 +267,7 @@ async function exportToPDF() {
 						<div class="ml-4">
 							<h3 class="text-lg font-semibold text-gray-900">Sedang Berjalan</h3>
 							<p class="text-3xl font-bold text-yellow-600">
-								{(progressData.length > 0 ? progressData : sampleData).filter(item => item.persentase > 0 && item.persentase < 100).length}
+								{progressData.length > 0 ? summary.inProgress : sampleData.filter(item => item.persentase > 0 && item.persentase < 100).length}
 							</p>
 						</div>
 					</div>
@@ -268,7 +281,7 @@ async function exportToPDF() {
 						<div class="ml-4">
 							<h3 class="text-lg font-semibold text-gray-900">Belum Dimulai</h3>
 							<p class="text-3xl font-bold text-red-600">
-								{(progressData.length > 0 ? progressData : sampleData).filter(item => item.persentase === 0).length}
+								{progressData.length > 0 ? summary.notStarted : sampleData.filter(item => item.persentase === 0).length}
 							</p>
 						</div>
 					</div>
@@ -277,9 +290,43 @@ async function exportToPDF() {
 
 			<!-- Progress Table -->
 			<div class="bg-white rounded-lg shadow-md p-6">
-				<div class="mb-6">
-					<h2 class="text-xl font-bold text-gray-900 mb-2">Detail Progress Aksi</h2>
-					<p class="text-gray-600">Data progress terakhir dari seluruh implementasi aksi PEN</p>
+				<div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+					<div>
+						<h2 class="text-xl font-bold text-gray-900 mb-2">Detail Progress Aksi</h2>
+						<p class="text-gray-600">Data progress terakhir dari seluruh implementasi aksi PEN</p>
+					</div>
+					
+					<!-- Filters -->
+					<div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+						<div class="flex items-center gap-2">
+							<label for="limitSelect" class="text-sm font-medium text-gray-700 whitespace-nowrap">Per halaman:</label>
+							<select 
+								id="limitSelect"
+								bind:value={pagination.limit}
+								on:change={() => { pagination.page = 1; loadProgressData(); }}
+								class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							>
+								<option value={10}>10</option>
+								<option value={25}>25</option>
+								<option value={50}>50</option>
+								<option value={100}>100</option>
+							</select>
+						</div>
+						<div class="flex items-center gap-2">
+							<label for="picFilter" class="text-sm font-medium text-gray-700 whitespace-nowrap">Filter PIC:</label>
+							<select 
+								id="picFilter"
+								bind:value={selectedPIC}
+								on:change={handlePICFilterChange}
+								class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
+							>
+								<option value="">Semua PIC</option>
+								{#each picList as pic}
+									<option value={pic.id}>{pic.namaInstansi}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
 				</div>
 
 				<div class="overflow-x-auto">
@@ -287,6 +334,59 @@ async function exportToPDF() {
 						<ProgressTable items={progressData.length > 0 ? progressData : sampleData} />
 					</div>
 				</div>
+
+				<!-- Pagination Controls -->
+				{#if progressData.length > 0 && pagination.totalPages > 1}
+					<div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+						<div class="text-sm text-gray-600">
+							Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} data
+						</div>
+						
+						<div class="flex items-center gap-2">
+							<button
+								on:click={() => handlePageChange(1)}
+								disabled={pagination.page === 1}
+								class="px-3 py-2 border rounded-lg {pagination.page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								«
+							</button>
+							<button
+								on:click={() => handlePageChange(pagination.page - 1)}
+								disabled={pagination.page === 1}
+								class="px-3 py-2 border rounded-lg {pagination.page === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								‹
+							</button>
+							
+							{#each Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+								const start = Math.max(1, Math.min(pagination.page - 2, pagination.totalPages - 4));
+								return start + i;
+							}) as pageNum}
+								<button
+									on:click={() => handlePageChange(pageNum)}
+									class="px-4 py-2 border rounded-lg {pagination.page === pageNum ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+								>
+									{pageNum}
+								</button>
+							{/each}
+							
+							<button
+								on:click={() => handlePageChange(pagination.page + 1)}
+								disabled={pagination.page === pagination.totalPages}
+								class="px-3 py-2 border rounded-lg {pagination.page === pagination.totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								›
+							</button>
+							<button
+								on:click={() => handlePageChange(pagination.totalPages)}
+								disabled={pagination.page === pagination.totalPages}
+								class="px-3 py-2 border rounded-lg {pagination.page === pagination.totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}"
+							>
+								»
+							</button>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Export Button -->
