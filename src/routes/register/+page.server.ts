@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Actions, PageServerLoad } from './$types';
 import { createUser, findUserByEmail, createSession, getAllInstansi } from '$lib/server/auth';
 import { insertUserSchema } from '$lib/server/schema';
+import { sendWelcomeEmail } from '$lib/email';
 
 const registerSchema = z.object({
 	name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -89,6 +90,19 @@ export const actions: Actions = {
 			});
 
 			console.log('User created successfully:', newUser.id);
+
+			// Kirim email welcome
+			try {
+				const emailSent = await sendWelcomeEmail(newUser.email, newUser.name);
+				if (emailSent) {
+					console.log('Welcome email sent successfully to:', newUser.email);
+				} else {
+					console.warn('Failed to send welcome email, but registration continues');
+				}
+			} catch (emailError) {
+				console.error('Error sending welcome email:', emailError);
+				// Lanjutkan proses registrasi meskipun email gagal dikirim
+			}
 
 			// Buat session untuk user yang baru terdaftar
 			const sessionId = crypto.randomUUID();

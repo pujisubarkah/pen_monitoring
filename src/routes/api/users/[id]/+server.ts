@@ -3,7 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { users, instansi } from '$lib/server/schema';
 import { findUserByEmail, findUserById, hashPassword } from '$lib/server/auth';
-import { sendEmail } from '$lib/email';
+import { sendVerificationEmail } from '$lib/email';
 import { eq } from 'drizzle-orm';
 
 // GET /api/users/[id] - get user by id
@@ -165,17 +165,14 @@ export const PUT: RequestHandler = async ({ request, params }) => {
 
     // If user just got verified, send email
     if (!wasVerified && willBeVerified) {
-      // Send verification email
-      await sendEmail({
-        to: safe.email,
-        subject: 'Akun Anda Telah Diverifikasi',
-        html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">Akun Anda Telah Diverifikasi</h2>
-          <p>Selamat, akun Anda telah diverifikasi oleh admin. Silakan login ke sistem menggunakan email dan password Anda.</p>
-          <a href="${process.env.APP_URL || 'http://localhost:5173'}" style="display: inline-block; padding: 10px 20px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Login ke Sistem</a>
-          <p>Salam,<br>Tim Sistem Monitoring PEN</p>
-        </div>`
-      });
+      // Send verification email notification
+      try {
+        await sendVerificationEmail(safe.email, safe.name);
+        console.log('✅ Verification email sent to:', safe.email);
+      } catch (emailError) {
+        console.error('❌ Failed to send verification email:', emailError);
+        // Don't fail the request if email fails
+      }
     }
     return json({ success: true, data: safe });
   } catch (err: any) {

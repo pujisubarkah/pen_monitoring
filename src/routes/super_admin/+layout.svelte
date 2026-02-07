@@ -4,11 +4,12 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { writable } from 'svelte/store';
+	import { browser } from '$app/environment';
 
 	const user = writable(null);
 
 	function updateUserFromLocalStorage() {
-		if (typeof localStorage !== 'undefined') {
+		if (browser) {
 			const userData = localStorage.getItem('user');
 			if (userData) {
 				try {
@@ -22,7 +23,9 @@
 	}
 
 	onMount(() => {
-		updateUserFromLocalStorage();
+		if (browser) {
+			updateUserFromLocalStorage();
+		}
 	});
 </script>
 

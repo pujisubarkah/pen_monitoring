@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount } from 'svelte';
-	import { writable } from 'svelte/store';
+	import { onMount, onDestroy } from 'svelte';
+	import { writable, derived } from 'svelte/store';
+	import { browser } from '$app/environment';
 	const userInfo = writable({ userName: '', userInstansi: '' });
 
 	let isOpen = true;
@@ -35,7 +36,7 @@
 		{ name: 'Progress Pen', path: `/user/progress_pen`, icon: '📊' }
 	];
 
-	function getMenuByRoute() {
+	const menu = derived(page, ($page) => {
 		if ($page.url.pathname.startsWith('/super_admin')) {
 			return menuSuperAdmin;
 		} else if ($page.url.pathname.startsWith('/admin')) {
@@ -43,10 +44,10 @@
 		} else {
 			return menuUser;
 		}
-	}
+	});
 
 	function updateUserFromLocalStorage() {
-		if (typeof localStorage !== 'undefined') {
+		if (browser) {
 			const user = localStorage.getItem('user');
 			if (user) {
 				try {
@@ -64,8 +65,16 @@
 		}
 	}
 	onMount(() => {
-		updateUserFromLocalStorage();
-		window.addEventListener('storage', updateUserFromLocalStorage);
+		if (browser) {
+			updateUserFromLocalStorage();
+			window.addEventListener('storage', updateUserFromLocalStorage);
+		}
+	});
+
+	onDestroy(() => {
+		if (browser) {
+			window.removeEventListener('storage', updateUserFromLocalStorage);
+		}
 	});
 </script>
 
@@ -74,7 +83,7 @@
 		class="sidebar-toggle absolute top-2 left-2 z-20 bg-gray-200 hover:bg-gray-300 rounded-full p-2 focus:outline-none"
 		on:click={toggleSidebar}
 		aria-label={isOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
-		style="transition: left 0.2s;"
+		style="transition: left 0.1s;"
 	>
 		{#if isOpen}
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -84,7 +93,7 @@
 	</button>
 	<aside
 		class="sidebar"
-		style="background-color: #1f2937; color: white; width: 240px; min-width: 240px; transition: transform 0.2s; position: fixed; top: 0; left: 0; height: 100vh; z-index: 10;"
+		style="background-color: #1f2937; color: white; width: 240px; min-width: 240px; transition: transform 0.1s; position: fixed; top: 0; left: 0; height: 100vh; z-index: 10;"
 		class:hidden={!isOpen}
 		class:sidebar-open={isOpen}
 	>
@@ -99,7 +108,7 @@
 		</div>
 
 		<nav class="sidebar-nav">
-			{#each getMenuByRoute() as item}
+			{#each $menu as item}
 				<a
 					href={item.path}
 					class="nav-item"
@@ -120,7 +129,7 @@
 			</form>
 		</div>
 	</aside>
-	<div class="sidebar-content" style="margin-left: {isOpen ? '240px' : '0'}; transition: margin-left 0.2s; min-height: 100vh;">
+	<div class="sidebar-content" style="margin-left: {isOpen ? '240px' : '0'}; transition: margin-left 0.1s; min-height: 100vh;">
 		<slot />
 	</div>
 </div>

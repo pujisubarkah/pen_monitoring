@@ -2,12 +2,15 @@
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { browser } from '$app/environment';
 
 	// Store user data in localStorage when available
 	onMount(() => {
-		const userData = $page.data.user;
-		if (userData) {
-			localStorage.setItem('user', JSON.stringify(userData));
+		if (browser) {
+			const userData = $page.data.user;
+			if (userData) {
+				localStorage.setItem('user', JSON.stringify(userData));
+			}
 		}
 	});
 </script>

@@ -111,14 +111,13 @@ onMount(async () => {
 					<div class="rounded-lg shadow text-white p-3 sm:p-4 text-center flex flex-col gap-2" style="background-color:#0BA6DF">
 						<div class="text-xs sm:text-sm font-medium">Pengurus/Pengawas Koperasi</div>
 						<p class="text-lg sm:text-xl font-bold">{summary.pengurus?.toLocaleString?.() ?? '-'}</p>
-						<div class="flex flex-col justify-around gap-2 sm:gap-0">
-							<div class="items-center">
+						<div class="grid grid-cols-2 gap-2 items-center">
+							<div class="flex flex-col items-center">
 								<p class="text-2xl sm:text-3xl">👨</p>
 								<p class="text-lg sm:text-xl font-bold">{summary.pengurusL?.toLocaleString?.() ?? '-'}</p>
 								<p class="text-xs sm:text-sm">Laki-Laki</p>
 							</div>
-							<span class="w-full h-0.5 rounded bg-white"></span>
-							<div class="items-center">
+							<div class="flex flex-col items-center">
 								<p class="text-2xl sm:text-3xl">👩</p>
 								<p class="text-lg sm:text-xl font-bold">{summary.pengurusP?.toLocaleString?.() ?? '-'}</p>
 								<p class="text-xs sm:text-sm">Perempuan</p>
@@ -128,14 +127,13 @@ onMount(async () => {
 					<div class="rounded-lg shadow text-white p-3 sm:p-4 text-center flex flex-col gap-2" style="background-color:#9112BC">
 						<div class="text-xs sm:text-sm font-medium">Anggota Koperasi</div>
 						<p class="text-lg sm:text-xl font-bold">{summary.anggota?.toLocaleString?.() ?? '-'}</p>
-						<div class="flex flex-col justify-around gap-2 sm:gap-0">
-							<div class="items-center">
+						<div class="grid grid-cols-2 gap-2 items-center">
+							<div class="flex flex-col items-center">
 								<p class="text-2xl sm:text-3xl">👨</p>
 								<p class="text-lg sm:text-xl font-bold">{summary.anggotaL?.toLocaleString?.() ?? '-'}</p>
 								<p class="text-xs sm:text-sm">Laki-Laki</p>
 							</div>
-							<span class="w-full h-0.5 rounded bg-white"></span>
-							<div class="items-center">
+							<div class="flex flex-col items-center">
 								<p class="text-2xl sm:text-3xl">👩</p>
 								<p class="text-lg sm:text-xl font-bold">{summary.anggotaP?.toLocaleString?.() ?? '-'}</p>
 								<p class="text-xs sm:text-sm">Perempuan</p>
